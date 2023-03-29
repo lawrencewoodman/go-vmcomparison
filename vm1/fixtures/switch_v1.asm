@@ -59,7 +59,6 @@ caseOff: 0
 lac:     3
 ok:      0
 cnt:     0
-l3:      3
 l8:      8
 l11:    11
 l23:    23

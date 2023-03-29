@@ -92,8 +92,13 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 		} else {
 			v.pc = mask32(v.pc + 2)
 		}
+	case 5 << 24: // JMP
+		v.pc = operandA
 	case 7 << 24: // AND
 		v.mem[operandB] = v.mem[operandA] & v.mem[operandB]
+		v.pc = mask32(v.pc + 2)
+	case 8 << 24: // SHL
+		v.mem[operandB] = mask32(v.mem[operandB] << v.mem[operandA])
 		v.pc = mask32(v.pc + 2)
 	case (3 | 0x80) << 24: // ADD I
 		// TODO: Decide if I is first operand indirect and II is both, what if just 2nd?
@@ -110,7 +115,6 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 		//fmt.Printf("PC: %d  LIT  A: %d, B: %d\n", v.pc, operandA, operandB)
 		v.mem[operandB] = operandA
 		v.pc = mask32(v.pc + 2)
-
 	default:
 		panic(fmt.Sprintf("unknown opcode: %d (%d)", opcode, (opcode&0x3f000000)>>24))
 	}
