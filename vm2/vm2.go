@@ -94,6 +94,10 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 		}
 	case 5 << 24: // JMP
 		v.pc = operandA
+	case 6 << 24: // LIT
+		//fmt.Printf("PC: %d  LIT  A: %d, B: %d\n", v.pc, operandA, operandB)
+		v.mem[operandB] = operandA
+		v.pc = mask32(v.pc + 2)
 	case 7 << 24: // AND
 		v.mem[operandB] = v.mem[operandA] & v.mem[operandB]
 		v.pc = mask32(v.pc + 2)
@@ -111,10 +115,21 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 		v.pc = mask32(v.pc + 2)
 	case (5 | 0x80) << 24: // JMP I
 		v.pc = v.mem[operandA]
-	case 6 << 24: // LIT
-		//fmt.Printf("PC: %d  LIT  A: %d, B: %d\n", v.pc, operandA, operandB)
-		v.mem[operandB] = operandA
-		v.pc = mask32(v.pc + 2)
+	case (9 | 0x80) << 24: // JMPX I - Jump indexed
+		// NOTE: for quick jump tables and threaded code
+		// TODO: Rename mneumonic?
+		// TODO: Need to think about how these operands are used - are the obvious and consistent?
+		addr := mask32(v.mem[operandA] + v.mem[operandB])
+		if addr >= memSize {
+			// TODO: Implement an error
+			panic(fmt.Sprintf("outside memory range. pc: %d, addr: %d", v.pc, addr))
+		}
+		addr = v.mem[addr]
+		if addr >= memSize {
+			// TODO: Implement an error
+			panic("outside memory range")
+		}
+		v.pc = addr
 	default:
 		panic(fmt.Sprintf("unknown opcode: %d (%d)", opcode, (opcode&0x3f000000)>>24))
 	}

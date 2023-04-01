@@ -26,6 +26,7 @@ var instructions = map[string]uint{
 	"LIT":  6 << 24,
 	"AND":  7 << 24,
 	"SHL":  8 << 24,
+	"JMPX": 9 << 24,
 }
 
 func readFile(filename string) ([]string, error) {
