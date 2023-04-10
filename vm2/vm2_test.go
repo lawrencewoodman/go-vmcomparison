@@ -9,6 +9,7 @@ var tests = []struct {
 	filename string
 	want     map[uint]uint // [memloc]value
 }{
+	{"tad_v1.asm", map[uint]uint{14: 32}},
 	{"jsr_v1.asm", map[uint]uint{12: 607500, 27: 4050}},
 	{"jsr_v2.asm", map[uint]uint{12: 607500, 24: 4050}},
 	{"loopuntil_v1.asm", map[uint]uint{16: 3459}},
