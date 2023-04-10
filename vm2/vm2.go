@@ -67,6 +67,25 @@ func mask32(n uint) uint {
 	return n & 0xFFFFFFFF
 }
 
+func (v *VM2) calcIndirectAddr(addr uint) uint {
+	addr = v.mem[addr]
+	if addr >= memSize {
+		// TODO: Implement an error
+		panic("outside memory range")
+	}
+	return addr
+}
+
+func (v *VM2) op_ADD(operandA uint, operandB uint) {
+	v.mem[operandB] = mask32(v.mem[operandA] + v.mem[operandB])
+	v.pc = mask32(v.pc + 2)
+}
+
+// TODO: Work out what to do with operandB
+func (v *VM2) op_JMP(operandA uint) {
+	v.pc = operandA
+}
+
 // execute executes the supplied instruction
 // Returns: hlt, error
 func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
@@ -83,8 +102,7 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 		v.mem[operandB] = mask32(v.pc + 2)
 		v.pc = operandA
 	case 3 << 24: // ADD
-		v.mem[operandB] = mask32(v.mem[operandA] + v.mem[operandB])
-		v.pc = mask32(v.pc + 2)
+		v.op_ADD(operandA, operandB)
 	case 4 << 24: // DJNZ
 		v.mem[operandA] = mask32(v.mem[operandA] - 1)
 		if v.mem[operandA] != 0 {
@@ -93,7 +111,7 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 			v.pc = mask32(v.pc + 2)
 		}
 	case 5 << 24: // JMP
-		v.pc = operandA
+		v.op_JMP(operandA)
 	case 6 << 24: // LIT
 		//fmt.Printf("PC: %d  LIT  A: %d, B: %d\n", v.pc, operandA, operandB)
 		v.mem[operandB] = operandA
@@ -106,15 +124,11 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 		v.pc = mask32(v.pc + 2)
 	case (3 | 0x80) << 24: // ADD I
 		// TODO: Decide if I is first operand indirect and II is both, what if just 2nd?
-		addr := v.mem[operandA]
-		if addr >= memSize {
-			// TODO: Implement an error
-			panic("outside memory range")
-		}
-		v.mem[operandB] = mask32(v.mem[addr] + v.mem[operandB])
-		v.pc = mask32(v.pc + 2)
+		operandA = v.calcIndirectAddr(operandA)
+		v.op_ADD(operandA, operandB)
 	case (5 | 0x80) << 24: // JMP I
-		v.pc = v.mem[operandA]
+		operandA = v.calcIndirectAddr(operandA)
+		v.op_JMP(operandA)
 	case (9 | 0x80) << 24: // JMPX I - Jump indexed
 		// NOTE: for quick jump tables and threaded code
 		// TODO: Rename mneumonic?
