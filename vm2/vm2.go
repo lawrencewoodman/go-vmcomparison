@@ -81,9 +81,22 @@ func (v *VM2) op_ADD(operandA uint, operandB uint) {
 	v.pc = mask32(v.pc + 2)
 }
 
+func (v *VM2) op_AND(operandA uint, operandB uint) {
+	v.mem[operandB] = v.mem[operandA] & v.mem[operandB]
+	v.pc = mask32(v.pc + 2)
+}
+
 // TODO: Work out what to do with operandB
 func (v *VM2) op_JMP(operandA uint) {
 	v.pc = operandA
+}
+
+func (v *VM2) op_JNZ(operandA uint, operandB uint) {
+	if v.mem[operandA] != 0 {
+		v.pc = operandB
+	} else {
+		v.pc = mask32(v.pc + 2)
+	}
 }
 
 // execute executes the supplied instruction
@@ -117,18 +130,24 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 		v.mem[operandB] = operandA
 		v.pc = mask32(v.pc + 2)
 	case 7 << 24: // AND
-		v.mem[operandB] = v.mem[operandA] & v.mem[operandB]
-		v.pc = mask32(v.pc + 2)
+		v.op_AND(operandA, operandB)
 	case 8 << 24: // SHL
 		v.mem[operandB] = mask32(v.mem[operandB] << v.mem[operandA])
 		v.pc = mask32(v.pc + 2)
+	case 10 << 24: // JNZ
+		v.op_JNZ(operandA, operandB)
+	case (3 | 0x40) << 24: // ADD DI
+		operandB = v.calcIndirectAddr(operandB)
+		v.op_ADD(operandA, operandB)
 	case (3 | 0x80) << 24: // ADD I
-		// TODO: Decide if I is first operand indirect and II is both, what if just 2nd?
 		operandA = v.calcIndirectAddr(operandA)
 		v.op_ADD(operandA, operandB)
 	case (5 | 0x80) << 24: // JMP I
 		operandA = v.calcIndirectAddr(operandA)
 		v.op_JMP(operandA)
+	case (7 | 0x40) << 24: // AND DI
+		operandB = v.calcIndirectAddr(operandB)
+		v.op_AND(operandA, operandB)
 	case (9 | 0x80) << 24: // JMPX I - Jump indexed
 		// NOTE: for quick jump tables and threaded code
 		// TODO: Rename mneumonic?
@@ -144,6 +163,9 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 			panic("outside memory range")
 		}
 		v.pc = addr
+	case (10 | 0x80) << 24: // JNZ I
+		operandA = v.calcIndirectAddr(operandA)
+		v.op_JNZ(operandA, operandB)
 	default:
 		panic(fmt.Sprintf("unknown opcode: %d (%d)", opcode, (opcode&0x3f000000)>>24))
 	}

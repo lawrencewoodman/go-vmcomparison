@@ -27,6 +27,7 @@ var instructions = map[string]uint{
 	"AND":  7 << 24,
 	"SHL":  8 << 24,
 	"JMPX": 9 << 24,
+	"JNZ":  10 << 24,
 }
 
 func readFile(filename string) ([]string, error) {
@@ -54,7 +55,7 @@ func readFile(filename string) ([]string, error) {
 // Regular expressions for parts of a line
 var reLabel = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-z]+):`)
 var reInstr = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]+)\s+`)
-var reAddrMode = regexp.MustCompile(`^\s*([iI]{1,2})\s+`)
+var reAddrMode = regexp.MustCompile(`^\s*([diDI]{1,2})\s+`)
 var reOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z]+)`)
 var reLiteral = regexp.MustCompile(`^\s*([0-9]+).*`)
 
@@ -171,12 +172,14 @@ func asmInstr(symbols map[string]uint, instr string, addrMode string, operandA s
 		panic(fmt.Sprintf("unknown instruction: %s", instr))
 	}
 
-	if addrMode == "I" {
+	switch addrMode {
+	case "":
+	case "I":
 		opcode |= 0x80 << 24
-	}
-
-	if addrMode == "II" {
+	case "DI":
 		opcode |= 0x40 << 24
+	default:
+		panic(fmt.Sprintf("unknown addressing mode: %s", addrMode))
 	}
 
 	//	fmt.Printf("asmInstr - opcode: %d, addrMod: %s, A: %s B: %s\n", opcode, addrMode, operandA, operandB)
