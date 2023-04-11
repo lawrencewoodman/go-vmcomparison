@@ -67,13 +67,13 @@ func mask32(n uint) uint {
 	return n & 0xFFFFFFFF
 }
 
-func (v *VM2) calcIndirectAddr(addr uint) uint {
+func (v *VM2) calcIndirectAddr(addr uint) (uint, error) {
 	addr = v.mem[addr]
 	if addr >= memSize {
 		// TODO: Implement an error
-		panic("outside memory range")
+		return addr, fmt.Errorf("outside memory range: %d", addr)
 	}
-	return addr
+	return addr, nil
 }
 
 func (v *VM2) op_ADD(operandA uint, operandB uint) {
@@ -102,6 +102,7 @@ func (v *VM2) op_JNZ(operandA uint, operandB uint) {
 // execute executes the supplied instruction
 // Returns: hlt, error
 func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
+	var err error
 	// fmt.Printf("PC: %d, opcode: %d (%d), A: %d, B: %d\n", v.pc, opcode, (opcode&0x3F000000)>>24, operandA, operandB)
 	switch opcode {
 	case 0 << 24: // HLT
@@ -137,16 +138,28 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 	case 10 << 24: // JNZ
 		v.op_JNZ(operandA, operandB)
 	case (3 | 0x40) << 24: // ADD DI
-		operandB = v.calcIndirectAddr(operandB)
+		operandB, err = v.calcIndirectAddr(operandB)
+		if err != nil {
+			return false, err
+		}
 		v.op_ADD(operandA, operandB)
 	case (3 | 0x80) << 24: // ADD I
-		operandA = v.calcIndirectAddr(operandA)
+		operandA, err = v.calcIndirectAddr(operandA)
+		if err != nil {
+			return false, err
+		}
 		v.op_ADD(operandA, operandB)
 	case (5 | 0x80) << 24: // JMP I
-		operandA = v.calcIndirectAddr(operandA)
+		operandA, err = v.calcIndirectAddr(operandA)
+		if err != nil {
+			return false, err
+		}
 		v.op_JMP(operandA)
 	case (7 | 0x40) << 24: // AND DI
-		operandB = v.calcIndirectAddr(operandB)
+		operandB, err = v.calcIndirectAddr(operandB)
+		if err != nil {
+			return false, err
+		}
 		v.op_AND(operandA, operandB)
 	case (9 | 0x80) << 24: // JMPX I - Jump indexed
 		// NOTE: for quick jump tables and threaded code
@@ -164,7 +177,10 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 		}
 		v.pc = addr
 	case (10 | 0x80) << 24: // JNZ I
-		operandA = v.calcIndirectAddr(operandA)
+		operandA, err = v.calcIndirectAddr(operandA)
+		if err != nil {
+			return false, err
+		}
 		v.op_JNZ(operandA, operandB)
 	default:
 		panic(fmt.Sprintf("unknown opcode: %d (%d)", opcode, (opcode&0x3f000000)>>24))

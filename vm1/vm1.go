@@ -185,8 +185,7 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 	case (1 | 0x80) << 24: // LDA I
 		addr = s.mem[addr]
 		if addr >= memSize {
-			// TODO: Implement an error
-			panic("outside memory range")
+			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.ac = s.mem[addr]
 		s.pc = mask32(s.pc + 1)
@@ -199,8 +198,7 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 		//fmt.Printf("ADD II baseIndirect: %d, indexIndirect: %d, base: %d, index: %d\n", baseIndirect, indexIndirect, base, index)
 		addr = base + index
 		if addr >= memSize {
-			// TODO: Implement an error
-			panic("outside memory range")
+			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.ac = s.mem[addr]
 		s.pc = mask32(s.pc + 1)
@@ -208,8 +206,7 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 	case (2 | 0x80) << 24: // STA I
 		addr = s.mem[addr]
 		if addr >= memSize {
-			// TODO: Implement an error
-			panic("outside memory range")
+			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.mem[addr] = s.ac
 		s.pc = mask32(s.pc + 1)
@@ -217,8 +214,7 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 		// TODO: remove? experimental built-in in-direct
 		addr = s.mem[addr]
 		if addr >= memSize {
-			// TODO: Implement an error
-			panic("outside memory range")
+			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.ac = mask32(s.ac + s.mem[addr])
 		s.pc = mask32(s.pc + 1)
@@ -232,8 +228,7 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 		//fmt.Printf("ADD II baseIndirect: %d, indexIndirect: %d, base: %d, index: %d\n", baseIndirect, indexIndirect, base, index)
 		addr = base + index
 		if addr >= memSize {
-			// TODO: Implement an error
-			panic("outside memory range")
+			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.ac = mask32(s.ac + s.mem[addr])
 		s.pc = mask32(s.pc + 1)
@@ -241,8 +236,7 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 	case (6 | 0x80) << 24: // INC I
 		addr = s.mem[addr]
 		if addr >= memSize {
-			// TODO: Implement an error
-			panic("outside memory range")
+			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.mem[addr] = mask32(s.mem[addr] + 1)
 		s.pc = mask32(s.pc + 1)
@@ -255,16 +249,14 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 		//fmt.Printf("ADD II baseIndirect: %d, indexIndirect: %d, base: %d, index: %d\n", baseIndirect, indexIndirect, base, index)
 		addr = base + index
 		if addr >= memSize {
-			// TODO: Implement an error
-			panic("outside memory range")
+			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.mem[addr] = (s.mem[addr] + 1) & 0o7777
 		s.pc = mask32(s.pc + 1)
 	case (10 | 0x80) << 24: // INC12 I - Increment and store least significant 12 bits
 		addr = s.mem[addr]
 		if addr >= memSize {
-			// TODO: Implement an error
-			panic("outside memory range")
+			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.mem[addr] = (s.mem[addr] + 1) & 0o7777
 		s.pc = mask32(s.pc + 1)
@@ -277,8 +269,7 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 		//fmt.Printf("ADD II baseIndirect: %d, indexIndirect: %d, base: %d, index: %d\n", baseIndirect, indexIndirect, base, index)
 		addr = base + index
 		if addr >= memSize {
-			// TODO: Implement an error
-			panic("outside memory range")
+			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.pc = addr
 	case (17) << 24: // ADD IX
@@ -294,8 +285,7 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 		//		fmt.Printf("ADD  IX addr: %d, x: %d, base: %d\n", addr, s.x, base)
 		addr = base + s.x
 		if addr >= memSize {
-			// TODO: Implement an error
-			panic("outside memory range")
+			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.ac = mask32(s.ac + s.mem[addr])
 		s.pc = mask32(s.pc + 1)
