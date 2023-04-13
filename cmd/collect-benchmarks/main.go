@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 )
 
@@ -52,6 +53,7 @@ func readFile(filename string) ([]string, error) {
 // Regular expressions for parts of a line
 var rePkg = regexp.MustCompile(`^pkg: .*?\/go-vmcomparison\/(.*)$`)
 var reBenchmark = regexp.MustCompile(`^Benchmark.*?\/(.*?)-[^ ]+\s+\d+\s+(\d+) ns\/op$`)
+var reNameStub = regexp.MustCompile(`^([^_]*).*$`)
 
 func parse(lines []string) []stat {
 	var pkg string
@@ -81,6 +83,15 @@ func printCSV(stats []stat) {
 	}
 }
 
+func groupSort(stats []stat) []stat {
+	sort.SliceStable(stats, func(i, j int) bool {
+		nameI := reNameStub.FindStringSubmatch(stats[i].name)[1]
+		nameJ := reNameStub.FindStringSubmatch(stats[j].name)[1]
+		return nameI < nameJ
+	})
+	return stats
+}
+
 func main() {
 	if len(os.Args) < 2 {
 		usage("no filename")
@@ -93,5 +104,6 @@ func main() {
 		os.Exit(1)
 	}
 	stats := parse(lines)
+	stats = groupSort(stats)
 	printCSV(stats)
 }
