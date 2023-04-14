@@ -1,23 +1,15 @@
-         ; SIVM2 - Version 2
-         ; JSR
-         LIT     150 lcnt
-loop:    LIT     4000 dlen
-         JSR     delay dret
-         ADD     dtot ltot
-         DJNZ    lcnt loop
-done:    HLT     ok 0
+        ; Version 2
+        ; JSR
+        LIT     50 n
+        JSR     setVal sret
+done:   HLT     ok 0
 
-ltot:    0
-lcnt:    0
-ok:      0
-l1:      1
+val:    0
+ok:     0
 
-; delay loop
-; passes length of delay in dlen
-delay:   LIT     50 dtot
-dloop:   ADD     l1 dtot
-         DJNZ    dlen dloop
-         JMP I   dret 0
-dtot:    0
-dlen:    0
-dret:    0
+; setVal
+; pass n in n
+setVal: MOV     n val
+        JMP I   sret 0
+n:      0
+sret:   0

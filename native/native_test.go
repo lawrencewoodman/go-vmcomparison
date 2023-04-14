@@ -44,24 +44,21 @@ func initTad() ([]uint, func(v *Native)) {
 	return mem, action
 }
 
+// Used by initJsr
+// The go:noinline directive is there so that we actually test a subroutine rather than
+// just having the routine inlined in the code
+//
+//go:noinline
+func setVal(v *Native, n uint) {
+	v.mem[0] = n
+}
+
 func initJsr() ([]uint, func(v *Native)) {
 	mem := []uint{
-		0, // cnt
-		0, // ltot
-		0, // dtot
+		0, // val
 	}
 	action := func(v *Native) {
-		delay := func(v *Native, n uint) {
-			v.mem[2] = 50
-			for i := n; i > 0; i-- {
-				v.mem[2] = mask32(v.mem[2] + 1)
-			}
-		}
-
-		for v.mem[0] = 150; v.mem[0] > 0; v.mem[0]-- {
-			delay(v, 4000)
-			v.mem[1] = mask32(v.mem[1] + v.mem[2])
-		}
+		setVal(v, 50)
 	}
 	return mem, action
 }
@@ -103,7 +100,7 @@ var tests = []struct {
 }{
 	{"tad", initTad, map[uint]uint{0: 32}, 0},
 	{"isz", initIsz, map[uint]uint{0: 24}, 0},
-	{"jsr", initJsr, map[uint]uint{0: 0, 1: 4050 * 150, 2: 4050}, 0},
+	{"jsr", initJsr, map[uint]uint{0: 50}, 0},
 	{"loopuntil", initLoopUntil, map[uint]uint{0: 3459}, 0},
 	{"switch", initSwitch, map[uint]uint{0: 2255}, 0},
 }

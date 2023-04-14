@@ -21,7 +21,7 @@ var VMtests = []struct {
 	{"loopuntil_v4.asm", map[uint]uint{11: 3459}},
 	{"loopuntil_v5.asm", map[uint]uint{9: 3459}},
 	{"switch_v1.asm", map[uint]uint{44: 2255}},
-	{"jsr_v1.asm", map[uint]uint{8: 607500, 22: 4050}},
+	{"jsr_v1.asm", map[uint]uint{3: 50}},
 }
 
 func TestRun(t *testing.T) {

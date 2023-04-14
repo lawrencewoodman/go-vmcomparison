@@ -53,7 +53,7 @@ func readFile(filename string) ([]string, error) {
 }
 
 // Regular expressions for parts of a line
-var reLabel = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-z]+):`)
+var reLabel = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-z]*):`)
 var reInstr = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]+)\s+`)
 var reAddrMode = regexp.MustCompile(`^\s*([diDI]{1,2})\s+`)
 var reOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z]+)`)
@@ -86,26 +86,26 @@ func pass1(srcLines []string) map[string]uint {
 	return symbols
 }
 
-func pass2(srcLines []string, symbols map[string]uint) []uint {
-	// Returns: operand, restLine
-	getOperand := func(line string, addrMode string) (string, string) {
-		operand := ""
-		if reOperand.MatchString(line) {
-			operand = reOperand.FindStringSubmatch(line)[1]
-			matchIndices := reOperand.FindStringSubmatchIndex(line)
-			line = line[matchIndices[3]:]
+// Returns: operand, restLine
+func getOperand(line string, addrMode string) (string, string) {
+	operand := ""
+	if reOperand.MatchString(line) {
+		operand = reOperand.FindStringSubmatch(line)[1]
+		matchIndices := reOperand.FindStringSubmatchIndex(line)
+		line = line[matchIndices[3]:]
+	} else {
+		if addrMode != "" {
+			// operand mistaken for address mode
+			operand = addrMode
 		} else {
-			if addrMode != "" {
-				// operand mistaken for address mode
-				operand = addrMode
-			} else {
-				// TODO: replace panic addition to errors
-				panic(fmt.Sprintf("no operand found for instruction: %s", line))
-			}
+			// TODO: replace panic addition to errors
+			panic(fmt.Sprintf("no operand found for instruction: %s", line))
 		}
-		return operand, line
 	}
+	return operand, line
+}
 
+func pass2(srcLines []string, symbols map[string]uint) []uint {
 	code := make([]uint, 0)
 	for _, line := range srcLines {
 		// If there is a label
