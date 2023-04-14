@@ -15,6 +15,7 @@ import (
 	"regexp"
 	"sort"
 	"strconv"
+	"strings"
 )
 
 type stat struct {
@@ -25,7 +26,7 @@ type stat struct {
 
 func usage(errMsg string) {
 	fmt.Fprintf(os.Stderr, "Error: %s\n", errMsg)
-	fmt.Fprintf(os.Stderr, "Usage: %s filename\n", os.Args[0])
+	fmt.Fprintf(os.Stderr, "Usage: %s [csv|tables] filename\n", os.Args[0])
 }
 
 func readFile(filename string) ([]string, error) {
@@ -77,27 +78,60 @@ func parse(lines []string) []stat {
 	return stats
 }
 
+func getStubName(s string) string {
+	return reNameStub.FindStringSubmatch(s)[1]
+}
+
 func printCSV(stats []stat) {
 	for _, s := range stats {
 		fmt.Printf("%s,%s,%d\n", s.pkg, s.name, s.ns)
 	}
 }
 
+func printTables(stats []stat) {
+	currentStubName := ""
+	for _, s := range stats {
+		stubName := getStubName(s.name)
+		if stubName != currentStubName {
+			// Print a title
+			fmt.Printf("\n%s\n%s\n", stubName, strings.Repeat("=", len(stubName)))
+			currentStubName = stubName
+		}
+		fmt.Printf("%-8s %-17s %9d\n", s.pkg, s.name, s.ns)
+	}
+}
+
 func groupSort(stats []stat) []stat {
 	sort.SliceStable(stats, func(i, j int) bool {
-		nameI := reNameStub.FindStringSubmatch(stats[i].name)[1]
-		nameJ := reNameStub.FindStringSubmatch(stats[j].name)[1]
+		nameI := getStubName(stats[i].name)
+		nameJ := getStubName(stats[j].name)
 		return nameI < nameJ
 	})
 	return stats
 }
 
 func main() {
-	if len(os.Args) < 2 {
+	filename := ""
+	command := "csv"
+
+	switch len(os.Args) {
+	case 1:
 		usage("no filename")
 		os.Exit(1)
+	case 2:
+		filename = os.Args[1]
+	case 3:
+		command = os.Args[1]
+		if command != "csv" && command != "tables" {
+			usage(fmt.Sprintf("incorrect command: %s", command))
+			os.Exit(1)
+		}
+		filename = os.Args[2]
+	default:
+		usage("wrong number of arguments")
+		os.Exit(1)
 	}
-	filename := os.Args[1]
+
 	lines, err := readFile(filename)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s", err)
@@ -105,5 +139,10 @@ func main() {
 	}
 	stats := parse(lines)
 	stats = groupSort(stats)
-	printCSV(stats)
+	switch command {
+	case "csv":
+		printCSV(stats)
+	case "tables":
+		printTables(stats)
+	}
 }
