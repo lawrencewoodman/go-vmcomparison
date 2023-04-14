@@ -25,6 +25,8 @@ const (
 	R_PUSH  = 25 << 24
 	R_POP   = 26 << 24
 	FETCHI  = 27 << 24
+	JSR     = 28 << 24
+	RET     = 29 << 24
 )
 
 var routineStack_TADv1 = []uint{
@@ -81,6 +83,19 @@ var routineStack_TADv3 = []uint{
 	9,  // lac
 	0,  // ok
 	23, // val
+}
+
+var routineStack_JSRv1 = []uint{
+	LITO + 50, // value to set
+	LITO + 5,  // setVal
+	JSR,
+	LITO + 0, // ok
+	HLT,
+	// setVal:
+	LITO + 8, // val
+	STORE,
+	RET,
+	0, // val
 }
 
 /*
@@ -209,6 +224,7 @@ var tests = []struct {
 	{"tad_v1", routineStack_TADv1, map[uint]uint{15: 32}},
 	{"tad_v2", routineStack_TADv2, map[uint]uint{12: 32}},
 	{"tad_v3", routineStack_TADv3, map[uint]uint{11: 32}},
+	{"jsr_v1", routineStack_JSRv1, map[uint]uint{8: 50}},
 	{"loopuntil_v1", routineStack_loopUntilv1, map[uint]uint{16: 3459}},
 	{"loopuntil_v2", routineStack_loopUntilv2, map[uint]uint{15: 3459}},
 	{"loopuntil_v3", routineStack_loopUntilv3, map[uint]uint{14: 3459}},
