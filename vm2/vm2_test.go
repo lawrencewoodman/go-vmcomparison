@@ -13,7 +13,7 @@ var tests = []struct {
 	{"isz_v1.asm", map[uint]uint{22: 24, 20: 9}},
 	{"jsr_v1.asm", map[uint]uint{6: 50}},
 	{"jsr_v2.asm", map[uint]uint{6: 50}},
-	{"loopuntil_v1.asm", map[uint]uint{16: 3459}},
+	{"loopuntil_v1.asm", map[uint]uint{8: 5000}},
 	{"switch_v1.asm", map[uint]uint{51: 2255}},
 	{"switch_v2.asm", map[uint]uint{49: 2255}},
 }

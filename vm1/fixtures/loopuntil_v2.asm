@@ -1,18 +1,15 @@
-         ; Version 2
-         ; LOOP UNTIL
-         LDA     l150
-         STA     cnt
-         LDA     lac
-loop:    ADD II  memBase,opAddr
-         DSZ     cnt
-         JMP     loop
-         STA12   lac
-done:    HLT     ok
-memBase: 8
-opAddr:  4
-lac:     9
-ok:      0
-val:     23
-cnt:     0
-l150:    150
-
+        ; Version 2
+        ; Uses y register
+        ; LOOP UNTIL
+        LDY     l5000
+        LDA     l0
+loop:   ADD     l1
+        ; Decrement Y and Jump if Not Zero
+        DYJNZ  loop
+        STA    sum
+done:   HLT    ok
+sum:    9
+ok:     0
+l0:     0
+l1:     1
+l5000:  5000

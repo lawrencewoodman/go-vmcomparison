@@ -20,13 +20,12 @@ func initIsz() ([]uint, func(v *Native)) {
 
 func initLoopUntil() ([]uint, func(v *Native)) {
 	mem := []uint{
-		9,  // lac
-		0,  // cnt
-		23, // value
+		0, // sum
+		0, // cnt
 	}
 	action := func(v *Native) {
-		for v.mem[1] = 150; v.mem[1] != 0; v.mem[1] = mask12(v.mem[1] - 1) {
-			v.mem[0] = mask12(v.mem[0] + v.mem[2])
+		for v.mem[1] = 5000; v.mem[1] != 0; v.mem[1]-- {
+			v.mem[0] += 1
 		}
 	}
 	return mem, action
@@ -101,7 +100,7 @@ var tests = []struct {
 	{"tad", initTad, map[uint]uint{0: 32}, 0},
 	{"isz", initIsz, map[uint]uint{0: 24}, 0},
 	{"jsr", initJsr, map[uint]uint{0: 50}, 0},
-	{"loopuntil", initLoopUntil, map[uint]uint{0: 3459}, 0},
+	{"loopuntil", initLoopUntil, map[uint]uint{0: 5000}, 0},
 	{"switch", initSwitch, map[uint]uint{0: 2255}, 0},
 }
 

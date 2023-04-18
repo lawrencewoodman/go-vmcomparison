@@ -121,99 +121,21 @@ cnt:     0
 l150:    150
 */
 var routineStack_loopUntilv1 = []uint{
-	FETCHO + 16, // lac
-	LITO + 150,  // (sum -- sum cnt)
+	LITO + 0,    // (-- sum)
+	LITO + 5000, // (sum -- sum cnt)
 	// loop:
-	SWAP,        // (sum cnt -- cnt sum)
-	FETCHO + 14, // memBase
-	FETCHO + 15, // opAddr
-	FETCHBI,     // (cnt sum base index -- cnt sum val)
-	ADD,         // (cnt sum val -- cnt sum)
-	SWAP,        // (cnt sum -- sum cnt)
-	DJNZO + 2,   // loop
-	DROP,        // (sum cnt -- sum)
-	LITO + 16,   // lac
-	STORE12,
-	LITO + 0,
-	HLT,
-	14, // memBase
-	3,  // opAddr
-	9,  // lac
-	23, // val
-}
-
-var routineStack_loopUntilv2 = []uint{
-	FETCHO + 15, // lac
-	LITO + 150,  // (sum -- sum cnt)
-	STOREO + 17, // cnt
-	// loop:
-	FETCHO + 13, // memBase
-	FETCHO + 14, // opAddr
-	FETCHBI,     // (sum base index -- sum val)
-	ADD,         // (sum val -- sum)
-	DSZO + 17,   // cnt
-	JMPO + 3,
-	LITO + 15, // lac
-	STORE12,
-	LITO + 0,
-	HLT,
-	13, // memBase
-	3,  // opAddr
-	9,  // lac
-	23, // val
-	0,  // cnt
-}
-
-var routineStack_loopUntilv3 = []uint{
-	FETCHO + 14, // lac
-	LITO + 150,  // (sum -- sum cnt)
-	STOREO + 16, // cnt
-	// loop:
-	FETCHO + 12, // membase
-	FETCHO + 13, // opaddr
-	ADDBI,
-	DSZO + 16, // cnt
-	JMPO + 3,
-	LITO + 14, // lac
-	STORE12,
-	LITO + 0,
-	HLT,
-	12, // memBase
-	3,  // opAddr
-	9,  // lac
-	23, // val
-	0,  // cnt
-}
-
-var routineStack_loopUntilv4 = []uint{
-	LITO + 22, // memBase
-	FETCH,
-	LITO + 23, // opAddr
-	FETCH,
-	ADD,
-	LITO + 24, // memloc
-	STORE,
-	LITO + 25, // lac
-	FETCH,
-	LITO + 150, // (sum -- sum cnt)
-	// loop:
-	R_PUSH,
-	LITO + 24, // memloc
-	FETCHI,
-	ADD, // (sum val -- sum)
-	R_POP,
-	LITO + 10, // loop
-	DJNZ,
+	SWAP,      // (sum cnt -- cnt sum)
+	LITO + 1,  // (cnt sum -- cnt sum 1)
+	ADD,       // (cnt sum 1 -- cnt sum)
+	SWAP,      // (cnt sum -- sum cnt)
+	DJNZO + 2, // loop
 	DROP,      // (sum cnt -- sum)
-	LITO + 25, // lac
-	STORE12,
+	LITO + 12, // (sum -- sum sumAddr)
+	STORE,
 	LITO + 0,
 	HLT,
-	22, // memBase
-	4,  // opAddr
-	0,  // memloc
-	9,  // lac
-	23, // val
+
+	0, // sum
 }
 
 var tests = []struct {
@@ -225,10 +147,7 @@ var tests = []struct {
 	{"tad_v2", routineStack_TADv2, map[uint]uint{12: 32}},
 	{"tad_v3", routineStack_TADv3, map[uint]uint{11: 32}},
 	{"jsr_v1", routineStack_JSRv1, map[uint]uint{8: 50}},
-	{"loopuntil_v1", routineStack_loopUntilv1, map[uint]uint{16: 3459}},
-	{"loopuntil_v2", routineStack_loopUntilv2, map[uint]uint{15: 3459}},
-	{"loopuntil_v3", routineStack_loopUntilv3, map[uint]uint{14: 3459}},
-	{"loopuntil_v4", routineStack_loopUntilv4, map[uint]uint{25: 3459}},
+	{"loopuntil_v1", routineStack_loopUntilv1, map[uint]uint{12: 5000}},
 }
 
 func TestRun(t *testing.T) {
