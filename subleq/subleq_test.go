@@ -15,12 +15,12 @@ var tests = []struct {
 func TestRun(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.filename, func(t *testing.T) {
-			routine, err := asm(filepath.Join("fixtures", test.filename))
+			routine, symbols, err := asm(filepath.Join("fixtures", test.filename))
 			if err != nil {
 				t.Fatalf("asm() err: %v", err)
 			}
 			v := New()
-			v.LoadRoutine(routine)
+			v.LoadRoutine(routine, symbols)
 			if err := v.Run(); err != nil {
 				t.Fatalf("Run() err: %v", err)
 			}
@@ -38,14 +38,14 @@ func BenchmarkRun(b *testing.B) {
 		b.Run(test.filename, func(b *testing.B) {
 			b.StopTimer()
 
-			routine, err := asm(filepath.Join("fixtures", test.filename))
+			routine, symbols, err := asm(filepath.Join("fixtures", test.filename))
 			if err != nil {
 				b.Fatalf("asm() err: %v", err)
 			}
 
 			for n := 0; n < b.N; n++ {
 				v := New()
-				v.LoadRoutine(routine)
+				v.LoadRoutine(routine, symbols)
 
 				b.StartTimer()
 				err := v.Run()

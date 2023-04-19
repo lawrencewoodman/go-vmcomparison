@@ -18,9 +18,10 @@ const memSize = 32000
 const hltLoc = 1000
 
 type SUBLEQ struct {
-	mem    [memSize]int // Memory
-	pc     int          // Program Counter
-	hltVal int          // A value returned by HLT
+	mem     [memSize]int   // Memory
+	pc      int            // Program Counter
+	hltVal  int            // A value returned by HLT
+	symbols map[string]int // The symbols table from the assembler - added because of difficulty debugging
 }
 
 func New() *SUBLEQ {
@@ -47,8 +48,9 @@ func (v *SUBLEQ) Run() error {
 	return nil
 }
 
-func (v *SUBLEQ) LoadRoutine(routine []int) {
+func (v *SUBLEQ) LoadRoutine(routine []int, symbols map[string]int) {
 	copy(v.mem[:], routine)
+	v.symbols = symbols
 }
 
 // fetch gets the next instruction from memory
@@ -81,10 +83,23 @@ func maintain32(n int) int {
 	return int(int32(n))
 }
 
+func (v *SUBLEQ) addr2symbol(addr int) string {
+	for k, v := range v.symbols {
+		if v == addr {
+			return k
+		}
+	}
+	return fmt.Sprintf("%d", addr)
+}
+
 // execute executes the supplied instruction
 // Returns: hlt, error
 func (v *SUBLEQ) execute(operandA int, operandB int, operandC int) bool {
-	v.mem[operandB] = maintain32(v.mem[operandB] - v.mem[operandA])
+	//	fmt.Printf("PC: %7s    SUBLEQ %7s, %7s, %7s\n", v.addr2symbol(v.pc), v.addr2symbol(operandA), v.addr2symbol(operandB), v.addr2symbol(operandC))
+	//	fmt.Printf("           %d (%b) - %d (%b) = ", v.mem[operandB], v.mem[operandB], v.mem[operandA], v.mem[operandA])
+	//v.mem[operandB] = maintain32(v.mem[operandB] - v.mem[operandA])
+	v.mem[operandB] = v.mem[operandB] - v.mem[operandA]
+	//	fmt.Printf("%d (%b)\n", v.mem[operandB], v.mem[operandB])
 	if operandB == hltLoc {
 		v.hltVal = v.mem[operandB]
 		return true

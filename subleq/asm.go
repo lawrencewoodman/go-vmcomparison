@@ -71,8 +71,11 @@ func pass1(srcLines []string) map[string]int {
 
 func pass2(srcLines []string, symbols map[string]int) []int {
 	pos := 0
+	lineNum := 0
 	code := make([]int, 0)
 	for _, line := range srcLines {
+		lineNum++
+		//		fmt.Printf("pass2 line: %s\n", line)
 		// If there is a label
 		if reLabel.MatchString(line) {
 			// Remove from line
@@ -99,7 +102,7 @@ func pass2(srcLines []string, symbols map[string]int) []int {
 			matchIndices := reInstr2.FindStringSubmatchIndex(line)
 			line = line[matchIndices[5]:]
 			if len(line) > 0 {
-				panic(fmt.Sprintf("remaining line: %s", line))
+				panic(fmt.Sprintf("line number: %d, remaining line: %s", lineNum, line))
 			}
 			code = append(code, asmInstr(symbols, operandA, operandB, operandC)...)
 			pos += 3
@@ -146,10 +149,10 @@ func asmInstr(symbols map[string]int, operandA string, operandB string, operandC
 	return code
 }
 
-func asm(filename string) ([]int, error) {
+func asm(filename string) ([]int, map[string]int, error) {
 	srcLines, err := readFile(filename)
 	if err != nil {
-		return []int{}, err
+		return []int{}, map[string]int{}, err
 	}
 	//fmt.Printf("before pass1\n")
 	symbols := pass1(srcLines)
@@ -161,5 +164,5 @@ func asm(filename string) ([]int, error) {
 	*/
 	code := pass2(srcLines, symbols)
 	// fmt.Printf("%v\n", code)
-	return code, nil
+	return code, symbols, nil
 }
