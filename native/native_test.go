@@ -43,6 +43,17 @@ func initTad() ([]uint, func(v *Native)) {
 	return mem, action
 }
 
+func initAdd12() ([]uint, func(v *Native)) {
+	mem := []uint{
+		4094, // a
+		6,    // b
+	}
+	action := func(v *Native) {
+		v.mem[1] = mask12(v.mem[0] + v.mem[1])
+	}
+	return mem, action
+}
+
 // Used by initJsr
 // The go:noinline directive is there so that we actually test a subroutine rather than
 // just having the routine inlined in the code
@@ -97,6 +108,7 @@ var tests = []struct {
 	want   map[uint]uint // [memloc]value
 	wantPC uint
 }{
+	{"add12", initAdd12, map[uint]uint{1: 4}, 0},
 	{"tad", initTad, map[uint]uint{0: 32}, 0},
 	{"isz", initIsz, map[uint]uint{0: 24}, 0},
 	{"jsr", initJsr, map[uint]uint{0: 50}, 0},
