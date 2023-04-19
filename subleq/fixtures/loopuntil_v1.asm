@@ -1,10 +1,8 @@
         ; Version 1
         ; LOOP UNTIL
 
-        ; MOV lm4999 to cnt (Loop 5000 times)
-        lm4999 z
-        z cnt
-        z z
+        ; MOV l4999 to cnt, cnt := 0--4999 = 0+4999 (Loop 5000 times)
+        l4999 cnt
 loop:
         ; ADD l1 to sum  (Take -1 from sum)
         lm1 sum
@@ -18,5 +16,5 @@ done:   lm1 1000
 z:      0
 cnt:    0
 sum:    0
-lm4999: -4999
+l4999:  4999
 lm1:    -1

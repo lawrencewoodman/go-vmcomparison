@@ -64,7 +64,7 @@ func readFile(filename string) ([]string, error) {
 }
 
 // Regular expressions for parts of a line
-var reLabel = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-z]+):`)
+var reLabel = regexp.MustCompile(`^\s*([a-zA-Z]+[0-9a-zA-z]*):`)
 var reInstr = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]+)\s+`)
 var reAddrMode = regexp.MustCompile(`^\s*([iI]{1,2})\s+`)
 var reOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z,]+).*`)
@@ -204,10 +204,12 @@ func asm(filename string) ([]uint, error) {
 	}
 	//fmt.Printf("before pass1\n")
 	symbols := pass1(srcLines)
-	//	fmt.Printf("Symbols\n=======\n")
-	//	for k, v := range symbols {
-	//		fmt.Printf("%s: %d\n", k, v)
-	//	}
+	/*
+		fmt.Printf("Symbols\n=======\n")
+		for k, v := range symbols {
+			fmt.Printf("%s: %d\n", k, v)
+		}
+	*/
 	code := pass2(srcLines, symbols)
 	// fmt.Printf("%v\n", code)
 	return code, nil
