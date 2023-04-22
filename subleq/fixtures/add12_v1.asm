@@ -1,4 +1,6 @@
         ; Version 1
+        ; The subleq version of this test operates on 31 bits instead of 32 because
+        ; all words are signed
         ; ADD12
 
         ; ADD a to b
@@ -7,9 +9,9 @@
         z z
 
         ; AND mask12 b
-        ; hbitval := 2^31
+        ; hbitval := 2^30
         ; res:= 0
-	; for x := 0; x < 32; x++ {
+	; for x := 0; x < 31; x++ {
 	;   m := 0
         ;   res += res
 	;   if mask12 >= hbitval {
@@ -26,8 +28,8 @@
 	;   b += b
 	; }
 
-        ; Loop 32 times
-        l31 cnt
+        ; Loop 31 times
+        l30 cnt
 loop:
         ; m := 0
         m m
@@ -90,9 +92,9 @@ b:      6
 m:      0
 cnt:    0
 res:    0
-lhbitval:   2147483648
-lhbitvalc:  2147483648
+lhbitval:   1073741824
+lhbitvalc:  1073741824
 lm1:    -1
-l31:    31
-lmhbitval: -2147483648
+l30:    30
+lmhbitval: -1073741824
 mask12: 4095    ; 0o7777
