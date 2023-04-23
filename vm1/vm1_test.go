@@ -1,6 +1,7 @@
 package vm1
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 )
@@ -47,13 +48,12 @@ func TestRun(t *testing.T) {
 
 func BenchmarkRun(b *testing.B) {
 	for _, test := range VMtests {
+		routine, err := asm(filepath.Join("fixtures", test.filename))
+		if err != nil {
+			b.Fatalf("asm() err: %v", err)
+		}
 		b.Run(test.filename, func(b *testing.B) {
 			b.StopTimer()
-
-			routine, err := asm(filepath.Join("fixtures", test.filename))
-			if err != nil {
-				b.Fatalf("asm() err: %v", err)
-			}
 
 			for n := 0; n < b.N; n++ {
 				v := New()
@@ -73,5 +73,6 @@ func BenchmarkRun(b *testing.B) {
 				}
 			}
 		})
+		fmt.Printf("Routine: %s size: %d\n", test.filename, len(routine))
 	}
 }

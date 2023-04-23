@@ -1,6 +1,7 @@
 package subleq
 
 import (
+	"fmt"
 	"math"
 	"path/filepath"
 	"testing"
@@ -37,13 +38,13 @@ func TestRun(t *testing.T) {
 
 func BenchmarkRun(b *testing.B) {
 	for _, test := range tests {
+		routine, symbols, err := asm(filepath.Join("fixtures", test.filename))
+		if err != nil {
+			b.Fatalf("asm() err: %v", err)
+		}
+
 		b.Run(test.filename, func(b *testing.B) {
 			b.StopTimer()
-
-			routine, symbols, err := asm(filepath.Join("fixtures", test.filename))
-			if err != nil {
-				b.Fatalf("asm() err: %v", err)
-			}
 
 			for n := 0; n < b.N; n++ {
 				v := New()
@@ -63,6 +64,7 @@ func BenchmarkRun(b *testing.B) {
 				}
 			}
 		})
+		fmt.Printf("Routine: %s size: %d\n", test.filename, len(routine))
 	}
 }
 

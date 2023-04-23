@@ -21,7 +21,8 @@ import (
 type stat struct {
 	pkg  string
 	name string
-	ns   uint
+	ns   int64
+	size int64
 }
 
 func usage(errMsg string) {
@@ -54,25 +55,41 @@ func readFile(filename string) ([]string, error) {
 // Regular expressions for parts of a line
 var rePkg = regexp.MustCompile(`^pkg: .*?\/go-vmcomparison\/(.*)$`)
 var reBenchmark = regexp.MustCompile(`^Benchmark.*?\/(.*?)-[^ ]+\s+\d+\s+(\d+) ns\/op$`)
+var reSize = regexp.MustCompile(`^Routine: ([^ ]+) size: (\d+)$`)
 var reNameStub = regexp.MustCompile(`^([^_]*).*$`)
 
 func parse(lines []string) []stat {
 	var pkg string
+	var size int64
 	var stats []stat
+	var err error
 
 	for _, line := range lines {
+		//		fmt.Printf("line: %s\n", line)
 		// If there is a pkg: line
 		if rePkg.MatchString(line) {
 			pkg = rePkg.FindStringSubmatch(line)[1]
-		} else if reBenchmark.MatchString(line) {
-			testName := reBenchmark.FindStringSubmatch(line)[1]
-			ns := reBenchmark.FindStringSubmatch(line)[2]
-			ui64, err := strconv.ParseUint(ns, 10, 64)
+			size = 0
+		} else if reSize.MatchString(line) {
+			// if there is a size line
+			testName := reSize.FindStringSubmatch(line)[1]
+			sizeS := reSize.FindStringSubmatch(line)[2]
+			size, err = strconv.ParseInt(sizeS, 10, 64)
 			if err != nil {
 				panic(err)
 			}
-			benchNS := uint(ui64)
-			stats = append(stats, stat{pkg, testName, benchNS})
+			if testName != stats[len(stats)-1].name {
+				panic(fmt.Sprintf("test names do not match: '%s' != '%s'", testName, stats[len(stats)-1].name))
+			}
+			stats[len(stats)-1].size = size
+		} else if reBenchmark.MatchString(line) {
+			testName := reBenchmark.FindStringSubmatch(line)[1]
+			nsS := reBenchmark.FindStringSubmatch(line)[2]
+			ns, err := strconv.ParseInt(nsS, 10, 64)
+			if err != nil {
+				panic(err)
+			}
+			stats = append(stats, stat{pkg, testName, ns, size})
 		}
 	}
 	return stats
@@ -84,7 +101,7 @@ func getStubName(s string) string {
 
 func printCSV(stats []stat) {
 	for _, s := range stats {
-		fmt.Printf("%s,%s,%d\n", s.pkg, s.name, s.ns)
+		fmt.Printf("%s,%s,%d,%d\n", s.pkg, s.name, s.ns, s.size)
 	}
 }
 
@@ -97,7 +114,11 @@ func printTables(stats []stat) {
 			fmt.Printf("\n%s\n%s\n", stubName, strings.Repeat("=", len(stubName)))
 			currentStubName = stubName
 		}
-		fmt.Printf("%-8s %-17s %9d\n", s.pkg, s.name, s.ns)
+		if s.size > 0 {
+			fmt.Printf("%-8s %-17s %9d ns  %3d words\n", s.pkg, s.name, s.ns, s.size)
+		} else {
+			fmt.Printf("%-8s %-17s %9d ns\n", s.pkg, s.name, s.ns)
+		}
 	}
 }
 

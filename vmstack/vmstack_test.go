@@ -1,6 +1,7 @@
 package vmstack
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -172,6 +173,7 @@ func BenchmarkRun(b *testing.B) {
 	for _, test := range tests {
 		b.Run(test.name, func(b *testing.B) {
 			b.StopTimer()
+
 			for n := 0; n < b.N; n++ {
 				v := New()
 				v.LoadRoutine(test.routine)
@@ -190,5 +192,6 @@ func BenchmarkRun(b *testing.B) {
 				}
 			}
 		})
+		fmt.Printf("Routine: %s size: %d\n", test.name, len(test.routine))
 	}
 }
