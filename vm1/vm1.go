@@ -99,9 +99,24 @@ func (s *VM1) fetch() (uint, uint, error) {
 	return opcode, addr, nil
 }
 
+// TODO: remove? experimental built-in in-direct
+func (s *VM1) calcIIAddr(addr uint) (uint, error) {
+	baseIndirect := addr >> 12
+	indexIndirect := addr & 0xFFF
+	// TODO: Assume always at least 4096 memory to avoid check
+	base := s.mem[baseIndirect]
+	index := s.mem[indexIndirect]
+	//fmt.Printf("II baseIndirect: %d, indexIndirect: %d, base: %d, index: %d\n", baseIndirect, indexIndirect, base, index)
+	addr = base + index
+	if addr >= memSize {
+		return 0, fmt.Errorf("outside memory range: %d", addr)
+	}
+	return addr, nil
+}
+
 // execute executes the supplied instruction
 // Returns: hlt, error
-func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
+func (s *VM1) execute(opcode, addr uint) (bool, error) {
 	//	fmt.Printf("PC: %d, opcode: %d (%d), addr: %d, AC: %d\n", s.pc, opcode, (opcode&0x3F000000)>>24, addr, s.ac)
 	switch opcode {
 	case 0 << 24: // HLT
@@ -196,15 +211,9 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 		s.ac = s.mem[addr]
 		s.pc++
 	case (1 | 0x40) << 24: // LDA II
-		baseIndirect := addr >> 12
-		indexIndirect := addr & 0xFFF
-		// TODO: Assume always at least 4096 memory to avoid check
-		base := s.mem[baseIndirect]
-		index := s.mem[indexIndirect]
-		//fmt.Printf("ADD II baseIndirect: %d, indexIndirect: %d, base: %d, index: %d\n", baseIndirect, indexIndirect, base, index)
-		addr = base + index
-		if addr >= memSize {
-			return false, fmt.Errorf("outside memory range: %d", addr)
+		addr, err := s.calcIIAddr(addr)
+		if err != nil {
+			return false, err
 		}
 		s.ac = s.mem[addr]
 		s.pc++
@@ -225,16 +234,9 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 		s.ac = mask32(s.ac + s.mem[addr])
 		s.pc++
 	case (3 | 0x40) << 24: // ADD II
-		// TODO: remove? experimental built-in in-direct
-		baseIndirect := addr >> 12
-		indexIndirect := addr & 0xFFF
-		// TODO: Assume always at least 4096 memory to avoid check
-		base := s.mem[baseIndirect]
-		index := s.mem[indexIndirect]
-		//fmt.Printf("ADD II baseIndirect: %d, indexIndirect: %d, base: %d, index: %d\n", baseIndirect, indexIndirect, base, index)
-		addr = base + index
-		if addr >= memSize {
-			return false, fmt.Errorf("outside memory range: %d", addr)
+		addr, err := s.calcIIAddr(addr)
+		if err != nil {
+			return false, err
 		}
 		s.ac = mask32(s.ac + s.mem[addr])
 		s.pc++
@@ -247,15 +249,9 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 		s.mem[addr] = mask32(s.mem[addr] + 1)
 		s.pc++
 	case (10 | 0x40) << 24: // INC12 II - Increment and store least significant 12 bits
-		baseIndirect := addr >> 12
-		indexIndirect := addr & 0xFFF
-		// TODO: Assume always at least 4096 memory to avoid check
-		base := s.mem[baseIndirect]
-		index := s.mem[indexIndirect]
-		//fmt.Printf("ADD II baseIndirect: %d, indexIndirect: %d, base: %d, index: %d\n", baseIndirect, indexIndirect, base, index)
-		addr = base + index
-		if addr >= memSize {
-			return false, fmt.Errorf("outside memory range: %d", addr)
+		addr, err := s.calcIIAddr(addr)
+		if err != nil {
+			return false, err
 		}
 		s.mem[addr] = (s.mem[addr] + 1) & 0o7777
 		s.pc++
@@ -267,15 +263,9 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 		s.mem[addr] = (s.mem[addr] + 1) & 0o7777
 		s.pc++
 	case (12 | 0x40) << 24: // JMP II
-		baseIndirect := addr >> 12
-		indexIndirect := addr & 0xFFF
-		// TODO: Assume always at least 4096 memory to avoid check
-		base := s.mem[baseIndirect]
-		index := s.mem[indexIndirect]
-		//fmt.Printf("ADD II baseIndirect: %d, indexIndirect: %d, base: %d, index: %d\n", baseIndirect, indexIndirect, base, index)
-		addr = base + index
-		if addr >= memSize {
-			return false, fmt.Errorf("outside memory range: %d", addr)
+		addr, err := s.calcIIAddr(addr)
+		if err != nil {
+			return false, err
 		}
 		s.pc = addr
 	case (17) << 24: // ADD IX
