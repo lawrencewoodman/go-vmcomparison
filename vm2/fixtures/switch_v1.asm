@@ -2,12 +2,9 @@
             ; SWITCH
             MOV     l8 cnt
 loop:       MOV     cnt caseOff
-            ; TODO: should we do a single SHL and put result in another location
-            ; TODO: or shift left by A number of times
             SHL     l2 caseOff
             MOV     switchBase caseLoc
             ADD     caseOff caseLoc
-            ; TODO: remove need to put 0 at end of JMP
             JMP I   caseLoc 0
 decCnt:     DJNZ    cnt loop
             HLT     ok 0

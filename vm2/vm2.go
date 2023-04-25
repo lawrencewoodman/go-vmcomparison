@@ -26,7 +26,10 @@ func New() *VM2 {
 }
 
 func (v *VM2) Step() (bool, error) {
-	opcode, operandA, operandB := v.fetch()
+	opcode, operandA, operandB, err := v.fetch()
+	if err != nil {
+		return false, err
+	}
 	return v.execute(opcode, operandA, operandB)
 }
 
@@ -53,24 +56,26 @@ func (v *VM2) LoadRoutine(routine []uint) {
 // fetch gets the next instruction from memory
 // Returns: opcode, operandA, operandB
 // TODO: describe instruction format
-func (v *VM2) fetch() (uint, uint, uint) {
+func (v *VM2) fetch() (uint, uint, uint, error) {
+	if v.pc+1 >= memSize {
+		return 0, 0, 0, fmt.Errorf("outside memory range: %d", v.pc+1)
+	}
 	ir := v.mem[v.pc]
 	// fmt.Printf("fetch PC: %d, ir: %d\n", v.pc, ir)
 	opcode := (ir & 0xFF000000)
 	operandA := (ir & 0xFFFFFF)
-	operandB := v.mem[mask32(v.pc+1)]
+	operandB := v.mem[v.pc+1]
 	// TODO: Decide if should increment PC here
-	return opcode, operandA, operandB
+	return opcode, operandA, operandB, nil
 }
 
 func mask32(n uint) uint {
 	return n & 0xFFFFFFFF
 }
 
-func (v *VM2) calcIndirectAddr(addr uint) (uint, error) {
+func (v *VM2) getMemValue(addr uint) (uint, error) {
 	addr = v.mem[addr]
 	if addr >= memSize {
-		// TODO: Implement an error
 		return addr, fmt.Errorf("outside memory range: %d", addr)
 	}
 	return addr, nil
@@ -78,24 +83,24 @@ func (v *VM2) calcIndirectAddr(addr uint) (uint, error) {
 
 func (v *VM2) op_ADD(operandA uint, operandB uint) {
 	v.mem[operandB] = mask32(v.mem[operandA] + v.mem[operandB])
-	v.pc = mask32(v.pc + 2)
+	v.pc += 2
 }
 
 func (v *VM2) op_AND(operandA uint, operandB uint) {
 	v.mem[operandB] = v.mem[operandA] & v.mem[operandB]
-	v.pc = mask32(v.pc + 2)
+	v.pc += 2
 }
 
-// TODO: Work out what to do with operandB
-func (v *VM2) op_JMP(operandA uint) {
-	v.pc = operandA
+// JMP to operandA+operandB
+func (v *VM2) op_JMP(operandA uint, operandB uint) {
+	v.pc = mask32(operandA + operandB)
 }
 
 func (v *VM2) op_JNZ(operandA uint, operandB uint) {
 	if v.mem[operandA] != 0 {
 		v.pc = operandB
 	} else {
-		v.pc = mask32(v.pc + 2)
+		v.pc += 2
 	}
 }
 
@@ -111,7 +116,7 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 		return true, nil
 	case 1 << 24: // MOV
 		v.mem[operandB] = v.mem[operandA]
-		v.pc = mask32(v.pc + 2)
+		v.pc += 2
 	case 2 << 24: // JSR
 		v.mem[operandB] = mask32(v.pc + 2)
 		v.pc = operandA
@@ -122,62 +127,54 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 		if v.mem[operandA] != 0 {
 			v.pc = operandB
 		} else {
-			v.pc = mask32(v.pc + 2)
+			v.pc += 2
 		}
 	case 5 << 24: // JMP
-		v.op_JMP(operandA)
+		v.op_JMP(operandA, operandB)
 	case 6 << 24: // LIT
 		//fmt.Printf("PC: %d  LIT  A: %d, B: %d\n", v.pc, operandA, operandB)
 		v.mem[operandB] = operandA
-		v.pc = mask32(v.pc + 2)
+		v.pc += 2
 	case 7 << 24: // AND
 		v.op_AND(operandA, operandB)
 	case 8 << 24: // SHL
 		v.mem[operandB] = mask32(v.mem[operandB] << v.mem[operandA])
-		v.pc = mask32(v.pc + 2)
-	case 10 << 24: // JNZ
+		v.pc += 2
+	case 9 << 24: // JNZ
 		v.op_JNZ(operandA, operandB)
 	case (3 | 0x40) << 24: // ADD DI
-		operandB, err = v.calcIndirectAddr(operandB)
+		operandB, err = v.getMemValue(operandB)
 		if err != nil {
 			return false, err
 		}
 		v.op_ADD(operandA, operandB)
 	case (3 | 0x80) << 24: // ADD I
-		operandA, err = v.calcIndirectAddr(operandA)
+		operandA, err = v.getMemValue(operandA)
 		if err != nil {
 			return false, err
 		}
 		v.op_ADD(operandA, operandB)
 	case (5 | 0x80) << 24: // JMP I
-		operandA, err = v.calcIndirectAddr(operandA)
+		operandA, err = v.getMemValue(operandA)
 		if err != nil {
 			return false, err
 		}
-		v.op_JMP(operandA)
+		v.op_JMP(operandA, operandB)
+	case (5 | 0x40) << 24: // JMP DI
+		// TODO: DI doesn't quite feel right - look into this
+		operandB, err = v.getMemValue(operandB)
+		if err != nil {
+			return false, err
+		}
+		v.op_JMP(operandA, operandB)
 	case (7 | 0x40) << 24: // AND DI
-		operandB, err = v.calcIndirectAddr(operandB)
+		operandB, err = v.getMemValue(operandB)
 		if err != nil {
 			return false, err
 		}
 		v.op_AND(operandA, operandB)
-	case (9 | 0x80) << 24: // JMPX I - Jump indexed
-		// NOTE: for quick jump tables and threaded code
-		// TODO: Rename mneumonic?
-		// TODO: Need to think about how these operands are used - are the obvious and consistent?
-		addr := mask32(v.mem[operandA] + v.mem[operandB])
-		if addr >= memSize {
-			// TODO: Implement an error
-			panic(fmt.Sprintf("outside memory range. pc: %d, addr: %d", v.pc, addr))
-		}
-		addr = v.mem[addr]
-		if addr >= memSize {
-			// TODO: Implement an error
-			panic("outside memory range")
-		}
-		v.pc = addr
-	case (10 | 0x80) << 24: // JNZ I
-		operandA, err = v.calcIndirectAddr(operandA)
+	case (9 | 0x80) << 24: // JNZ I
+		operandA, err = v.getMemValue(operandA)
 		if err != nil {
 			return false, err
 		}

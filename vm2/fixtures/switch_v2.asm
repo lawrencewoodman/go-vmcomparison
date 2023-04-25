@@ -1,22 +1,14 @@
             ; Version 2
-            ; Using a table to jump into switch
+            ; Using JMP DI
             ; SWITCH
             MOV     l8 cnt
-loop:       JMPX I  caseJumpBase cnt
+loop:       MOV     cnt caseOff
+            SHL     l2 caseOff
+            ; We use switch-4 so we don't have to dec cnt
+            ; JMP DI  switch-4 caseOff
+            JMP DI  8 caseOff
 decCnt:     DJNZ    cnt loop
             HLT     ok 0
-
-; TODO: Implement some sort of here indicator
-caseJumpBase:  8   ; here
-17 ; case0
-21 ; case1
-25 ; case2
-29 ; case3
-33 ; case4
-37 ; case5
-41 ; case6
-45 ; case7
-
 
 switch:
 case0:      ADD     l11 lac
@@ -57,3 +49,4 @@ l123:   123
 l367:   367
 l592:   592
 l1001:  1001
+caseOff: 0
