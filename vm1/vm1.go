@@ -28,7 +28,10 @@ func New() *VM1 {
 }
 
 func (s *VM1) Step() (bool, error) {
-	opcode, addr := s.fetch()
+	opcode, addr, err := s.fetch()
+	if err != nil {
+		return false, err
+	}
 	return s.execute(opcode, addr)
 }
 
@@ -59,7 +62,10 @@ func mask32(n uint) uint {
 // fetch gets the next instruction from memory
 // Returns: opcode, addr
 // TODO: describe instruction format
-func (s *VM1) fetch() (uint, uint) {
+func (s *VM1) fetch() (uint, uint, error) {
+	if s.pc >= memSize {
+		return 0, 0, fmt.Errorf("outside memory range: %d", s.pc)
+	}
 	ir := s.mem[s.pc]
 	//opcode := (ir & 0x3F000000) >> 24
 	opcode := (ir & 0xFF000000)
@@ -90,7 +96,7 @@ func (s *VM1) fetch() (uint, uint) {
 		}
 	*/
 
-	return opcode, addr
+	return opcode, addr, nil
 }
 
 // execute executes the supplied instruction
@@ -103,70 +109,70 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 		return true, nil
 	case 1 << 24: // LDA
 		s.ac = s.mem[addr]
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case 2 << 24: // STA
 		s.mem[addr] = s.ac
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case 3 << 24: // ADD
 		//fmt.Printf("PC: %d  ADD addr: %d\n", s.pc, addr)
 		s.ac = mask32(s.ac + s.mem[addr])
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case 4 << 24: // SUB
 		s.ac = mask32(s.ac - s.mem[addr])
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case 5 << 24: // AND
 		s.ac &= s.mem[addr]
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case 6 << 24: // INC
 		s.mem[addr] = mask32(s.mem[addr] + 1)
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case 7 << 24: // JNZ
 		if s.ac != 0 {
 			s.pc = addr
 		} else {
-			s.pc = mask32(s.pc + 1)
+			s.pc++
 		}
 	case 8 << 24: // LDO - Load offset
 	case 9 << 24: // STA13 - Store least significant 13 bits
 		s.mem[addr] = s.ac & 0o17777
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case 10 << 24: // INC12 - Increment and store least significant 12 bits
 		s.mem[addr] = (s.mem[addr] + 1) & 0o7777
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case 11 << 24: // DSZ
 		s.mem[addr] = mask32(s.mem[addr] - 1)
 		if s.mem[addr] == 0 {
-			s.pc = mask32(s.pc + 2)
+			s.pc += 2
 		} else {
-			s.pc = mask32(s.pc + 1)
+			s.pc++
 		}
 	case 12 << 24: // JMP
 		s.pc = addr
 	case 13 << 24: // SHL
 		s.mem[addr] = mask32(s.mem[addr] << 1)
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case 14 << 24: // STA12 - Store least significant 12 bits
 		s.mem[addr] = s.ac & 0o7777
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case 15 << 24: // LDX
 		s.x = s.mem[addr]
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case 16 << 24: // LDY
 		s.y = s.mem[addr]
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case 18 << 24: // DYJNZ
 		//		fmt.Printf("PC: %d  DYJNZ  AC: %d, Y: %d\n", s.pc, s.ac, s.y)
 		s.y = mask32(s.y - 1)
 		if s.y != 0 {
 			s.pc = addr
 		} else {
-			s.pc = mask32(s.pc + 1)
+			s.pc++
 		}
 	case 19 << 24: // STAD - Store A in first 24 bits of word
 		//		fmt.Printf("PC: %d  STAD  preaddr: %d, ", s.pc, addr)
 		s.mem[addr] = (s.mem[addr] & 0xFF000000) | (s.ac & 0xFFFFFF)
 		//		fmt.Printf("postaddr: %d, ac: %d\n", addr, s.ac)
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case 20 << 24: // JSR - Jump to address, store return address in RET
 		//		fmt.Printf("PC: %d  JSR  AC: %d, Y: %d\n", s.pc, s.ac, s.y)
 		s.r = mask32(s.pc + 1)
@@ -178,17 +184,17 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 		s.pc = s.r
 	case 22 << 24: // TAY - Transfer AC to Y
 		s.y = s.ac
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case 23 << 24: // STY - Store Y
 		s.mem[addr] = s.y
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case (1 | 0x80) << 24: // LDA I
 		addr = s.mem[addr]
 		if addr >= memSize {
 			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.ac = s.mem[addr]
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case (1 | 0x40) << 24: // LDA II
 		baseIndirect := addr >> 12
 		indexIndirect := addr & 0xFFF
@@ -201,7 +207,7 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.ac = s.mem[addr]
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 
 	case (2 | 0x80) << 24: // STA I
 		addr = s.mem[addr]
@@ -209,7 +215,7 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.mem[addr] = s.ac
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case (3 | 0x80) << 24: // ADD I
 		// TODO: remove? experimental built-in in-direct
 		addr = s.mem[addr]
@@ -217,7 +223,7 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.ac = mask32(s.ac + s.mem[addr])
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case (3 | 0x40) << 24: // ADD II
 		// TODO: remove? experimental built-in in-direct
 		baseIndirect := addr >> 12
@@ -231,7 +237,7 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.ac = mask32(s.ac + s.mem[addr])
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 
 	case (6 | 0x80) << 24: // INC I
 		addr = s.mem[addr]
@@ -239,7 +245,7 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.mem[addr] = mask32(s.mem[addr] + 1)
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case (10 | 0x40) << 24: // INC12 II - Increment and store least significant 12 bits
 		baseIndirect := addr >> 12
 		indexIndirect := addr & 0xFFF
@@ -252,14 +258,14 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.mem[addr] = (s.mem[addr] + 1) & 0o7777
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case (10 | 0x80) << 24: // INC12 I - Increment and store least significant 12 bits
 		addr = s.mem[addr]
 		if addr >= memSize {
 			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.mem[addr] = (s.mem[addr] + 1) & 0o7777
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	case (12 | 0x40) << 24: // JMP II
 		baseIndirect := addr >> 12
 		indexIndirect := addr & 0xFFF
@@ -288,7 +294,7 @@ func (s *VM1) execute(opcode uint, addr uint) (bool, error) {
 			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		s.ac = mask32(s.ac + s.mem[addr])
-		s.pc = mask32(s.pc + 1)
+		s.pc++
 	default:
 		panic(fmt.Sprintf("unknown opcode: %d (%d)", opcode, (opcode&0x3f000000)>>24))
 	}
