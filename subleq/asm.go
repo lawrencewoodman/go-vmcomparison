@@ -154,7 +154,6 @@ func asm(filename string) ([]int, map[string]int, error) {
 	if err != nil {
 		return []int{}, map[string]int{}, err
 	}
-	//fmt.Printf("before pass1\n")
 	symbols := pass1(srcLines)
 	/*
 		fmt.Printf("Symbols\n=======\n")
