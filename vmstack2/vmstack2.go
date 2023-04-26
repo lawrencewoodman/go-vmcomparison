@@ -21,7 +21,6 @@ type VMStack2 struct {
 	// stack  *CStack // 8 element circular data stack
 	rstack *LStack // 8 element limited return
 	hltVal uint    // A value returned by HLT
-	r      uint
 }
 
 func New() *VMStack2 {
