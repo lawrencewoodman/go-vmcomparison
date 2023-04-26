@@ -24,6 +24,8 @@ var instructions = map[string]uint{
 	"AND":     5 << 24,
 	"STORE13": 9 << 24,
 	"DJNZ":    11 << 24,
+	"JMP":     12 << 24,
+	"SHL":     13 << 24,
 	"STORE12": 14 << 24,
 	"LIT":     15 << 24,
 	"DROP":    18 << 24,

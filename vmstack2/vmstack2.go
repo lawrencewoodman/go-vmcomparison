@@ -151,7 +151,11 @@ func (v *VMStack2) Step() (bool, error) {
 			v.pc++
 		}
 	case 12 << 24: // JMP
-		v.pc = v.dstack.pop()
+		if operand > 0 {
+			v.pc = operand
+		} else {
+			v.pc = v.dstack.pop()
+		}
 	case 13 << 24: // SHL
 		v.dstack.replace(mask32(v.dstack.peek() << 1))
 		v.pc++
