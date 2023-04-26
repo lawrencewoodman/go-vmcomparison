@@ -22,6 +22,7 @@ var instructions = map[string]uint{
 	"STORE":   2 << 24,
 	"ADD":     3 << 24,
 	"AND":     5 << 24,
+	"JNZ":     7 << 24,
 	"STORE13": 9 << 24,
 	"DJNZ":    11 << 24,
 	"JMP":     12 << 24,
@@ -35,6 +36,7 @@ var instructions = map[string]uint{
 	"FETCHI":  27 << 24,
 	"JSR":     28 << 24,
 	"RET":     29 << 24,
+	"DUP":     30 << 24,
 }
 
 func readFile(filename string) ([]string, error) {
