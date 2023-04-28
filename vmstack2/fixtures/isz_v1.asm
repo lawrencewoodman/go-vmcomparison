@@ -21,7 +21,6 @@ done:       SWAP
 			STORE
 			HLT 1
 memBase:    18
-opAddr:     4
-memLoc:		0
+opAddr:     3
 pc:			9
 val:        23
