@@ -58,17 +58,17 @@ func pass1(srcLines []string) map[string]int {
 			symbols[label] = pos
 			line = line[matchIndices[1]:]
 		}
-
-		// If there is an instruction
 		if reInstr3.MatchString(line) || reInstr2.MatchString(line) {
+			// If there is an instruction
 			pos += 3
-		} else if reLiteral.MatchString(line) {
-			// If there is a literal value
-			pos++
 		} else if reExpr.MatchString(line) {
 			// If there is an expression
 			pos++
+		} else if reLiteral.MatchString(line) {
+			// If there is a literal value
+			pos++
 		}
+
 	}
 	return symbols
 }
@@ -86,8 +86,8 @@ func pass2(srcLines []string, symbols map[string]int) []int {
 			matchIndices := reLabel.FindStringSubmatchIndex(line)
 			line = line[matchIndices[1]:]
 		}
-		// If there is a 3 operand instruction
 		if reInstr3.MatchString(line) {
+			// If there is a 3 operand instruction
 			operandA := reInstr3.FindStringSubmatch(line)[1]
 			operandB := reInstr3.FindStringSubmatch(line)[2]
 			operandC := reInstr3.FindStringSubmatch(line)[3]
@@ -110,7 +110,13 @@ func pass2(srcLines []string, symbols map[string]int) []int {
 			}
 			code = append(code, asmInstr(symbols, operandA, operandB, operandC)...)
 			pos += 3
-
+		} else if reExpr.MatchString(line) {
+			// If there is an expression
+			a := reExpr.FindStringSubmatch(line)[1]
+			op := reExpr.FindStringSubmatch(line)[2]
+			b := reExpr.FindStringSubmatch(line)[3]
+			code = append(code, resolveExpr(symbols, a, op, b))
+			pos++
 		} else if reLiteral.MatchString(line) {
 			// If there is a literal value
 			lit := reLiteral.FindStringSubmatch(line)[1]
@@ -120,21 +126,21 @@ func pass2(srcLines []string, symbols map[string]int) []int {
 			}
 			code = append(code, int(i64))
 			pos++
-		} else if reExpr.MatchString(line) {
-			// If there is an expression
-			a := reExpr.FindStringSubmatch(line)[1]
-			op := reExpr.FindStringSubmatch(line)[2]
-			b := reExpr.FindStringSubmatch(line)[3]
-			code = append(code, resolveExpr(symbols, a, op, b))
-			pos++
 		}
+
 	}
 	return code
 }
 
 func resolveOperand(symbols map[string]int, operand string) int {
-	// If operand is a literal value
-	if reLiteral.MatchString(operand) {
+	if reExpr.MatchString(operand) {
+		// If operand is an expression
+		a := reExpr.FindStringSubmatch(operand)[1]
+		op := reExpr.FindStringSubmatch(operand)[2]
+		b := reExpr.FindStringSubmatch(operand)[3]
+		return resolveExpr(symbols, a, op, b)
+	} else if reLiteral.MatchString(operand) {
+		// If operand is a literal value
 		i64, err := strconv.ParseUint(operand, 10, 64)
 		if err != nil {
 			panic(err)
@@ -142,12 +148,6 @@ func resolveOperand(symbols map[string]int, operand string) int {
 		//		fmt.Printf("lit: %d\n", ui64)
 		return int(i64)
 		// If operand is an indexed address
-	} else if reExpr.MatchString(operand) {
-		// If operand is an expression
-		a := reExpr.FindStringSubmatch(operand)[1]
-		op := reExpr.FindStringSubmatch(operand)[2]
-		b := reExpr.FindStringSubmatch(operand)[3]
-		return resolveExpr(symbols, a, op, b)
 	}
 	v, ok := symbols[operand]
 	if !ok {

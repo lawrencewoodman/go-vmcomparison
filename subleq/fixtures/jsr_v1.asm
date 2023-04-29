@@ -17,7 +17,7 @@ done:   lm1 1000
 z:      0
 lm1:    1
 lm50:   -50
-lmdone: -15     ; Location of done negated
+lmdone: 0-done     ; Location of done negated
 val:    0
 
 ; setVal
