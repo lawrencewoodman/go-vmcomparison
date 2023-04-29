@@ -4,10 +4,8 @@
         n n
         lm50 n
         ; Store the return location
-        ; sret+2 sret+2
-        25 25
-        ; lmdone sret+2
-        lmdone 25
+        sret+2 sret+2
+        lmdone sret+2
 
         ; Jump to setVal
         z z setVal

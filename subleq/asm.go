@@ -40,9 +40,10 @@ func readFile(filename string) ([]string, error) {
 
 // Regular expressions for parts of a line
 var reLabel = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-z]*):`)
-var reInstr2 = regexp.MustCompile(`^\s*([0-9a-zA-Z]+)\s+([0-9a-zA-Z]+)`)
-var reInstr3 = regexp.MustCompile(`^\s*([0-9a-zA-Z]+)\s+([0-9a-zA-Z]+)\s+([0-9a-zA-Z]+)`)
+var reInstr2 = regexp.MustCompile(`^\s*([0-9a-zA-Z\-\+]+)\s+([0-9a-zA-Z\-\+]+)`)
+var reInstr3 = regexp.MustCompile(`^\s*([0-9a-zA-Z\-\+]+)\s+([0-9a-zA-Z\-\+]+)\s+([0-9a-zA-Z\-\+]+)`)
 var reLiteral = regexp.MustCompile(`^\s*([\-]?[0-9]+).*`)
+var reExpr = regexp.MustCompile(`^\s*([0-9a-zA-z]+)([\-\+])([0-9a-zA-Z]+)`)
 
 // Build symbol table
 func pass1(srcLines []string) map[string]int {
@@ -63,6 +64,9 @@ func pass1(srcLines []string) map[string]int {
 			pos += 3
 		} else if reLiteral.MatchString(line) {
 			// If there is a literal value
+			pos++
+		} else if reExpr.MatchString(line) {
+			// If there is an expression
 			pos++
 		}
 	}
@@ -116,6 +120,13 @@ func pass2(srcLines []string, symbols map[string]int) []int {
 			}
 			code = append(code, int(i64))
 			pos++
+		} else if reExpr.MatchString(line) {
+			// If there is an expression
+			a := reExpr.FindStringSubmatch(line)[1]
+			op := reExpr.FindStringSubmatch(line)[2]
+			b := reExpr.FindStringSubmatch(line)[3]
+			code = append(code, resolveExpr(symbols, a, op, b))
+			pos++
 		}
 	}
 	return code
@@ -131,12 +142,31 @@ func resolveOperand(symbols map[string]int, operand string) int {
 		//		fmt.Printf("lit: %d\n", ui64)
 		return int(i64)
 		// If operand is an indexed address
+	} else if reExpr.MatchString(operand) {
+		// If operand is an expression
+		a := reExpr.FindStringSubmatch(operand)[1]
+		op := reExpr.FindStringSubmatch(operand)[2]
+		b := reExpr.FindStringSubmatch(operand)[3]
+		return resolveExpr(symbols, a, op, b)
 	}
 	v, ok := symbols[operand]
 	if !ok {
 		panic(fmt.Sprintf("unknown operand: %s", operand))
 	}
 	return v
+}
+
+func resolveExpr(symbols map[string]int, a, op, b string) int {
+	aVal := resolveOperand(symbols, a)
+	bVal := resolveOperand(symbols, b)
+	switch op {
+	case "+":
+		return aVal + bVal
+	case "-":
+		return aVal - bVal
+	default:
+		panic(fmt.Sprintf("unknown op: %s", op))
+	}
 }
 
 func asmInstr(symbols map[string]int, operandA string, operandB string, operandC string) []int {

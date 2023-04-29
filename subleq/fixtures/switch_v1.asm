@@ -22,17 +22,14 @@ loop:       ; MOV     cnt caseOff
             z z
 
             ; MOV     switchBase jmpi+2
-            ; jmpi+2 jmpi+2
-            68 68
+            jmpi+2 jmpi+2
             switchBase z
-            ; z jmpi+2
-            z 68
+            z jmpi+2
             z z
 
             ; ADD     caseOff caseLoc
             caseOff z
-            ; z jmpi+2
-            z 68
+            z jmpi+2
             z z
 
             ; self modifying instruction
@@ -105,9 +102,7 @@ case7:      ; ADD     l1001 lac
             0
             0
 
-; TODO: Implement simple maths
-;switchBase: switch-8  ; -8 so we don't have to DEC cnt
-switchBase: 70
+switchBase: switch-8  ; -8 so we don't have to DEC cnt
 caseOff: 0
 lac:     3
 ok:      0
