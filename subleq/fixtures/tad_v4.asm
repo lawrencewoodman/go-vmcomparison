@@ -4,13 +4,9 @@
                 ; memory will only ever contain a 12-bit value
                 ; and checks for overflow rather than using AND
 
-                ; MOV memBase addit (memLoc)
+                ; MOV memBase+opAddr addit (memLoc)
                 addit addit
                 memBase z
-                z addit
-                z z
-
-                ; ADD opAddr addit (memLoc)
                 opAddr z
                 z addit
                 z z
@@ -42,7 +38,7 @@ l8192c: 8192    ; Used because l8192 gets temporarily corrupted
 lm1:    -1
 lm8192: -8192
 
-memBase: 53     ; TODO: be able to put memBase or similar here
+memBase: 47     ; TODO: be able to put memBase or similar here
 opAddr:  3
 lac:     9
 val:     23

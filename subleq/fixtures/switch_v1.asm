@@ -21,13 +21,9 @@ loop:       ; MOV     cnt caseOff
             z caseOff
             z z
 
-            ; MOV     switchBase jmpi+2
+            ; MOV     switchBase+caseoff jmpi+2
             jmpi+2 jmpi+2
             switchBase z
-            z jmpi+2
-            z z
-
-            ; ADD     caseOff caseLoc
             caseOff z
             z jmpi+2
             z z
