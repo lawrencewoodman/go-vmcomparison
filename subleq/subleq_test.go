@@ -23,6 +23,7 @@ var tests = []struct {
 	{"tad_v3.asm", map[int]int{51: 32, 53: 32}},
 	{"tad_v4.asm", map[int]int{49: 32}},
 	{"switch_v1.asm", map[int]int{138: 2255}},
+	{"switch_v2.asm", map[int]int{114: 2255}},
 }
 
 func TestRun(t *testing.T) {
