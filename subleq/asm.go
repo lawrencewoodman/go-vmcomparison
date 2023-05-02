@@ -39,10 +39,11 @@ func readFile(filename string) ([]string, error) {
 }
 
 // Regular expressions for parts of a line
-var reLabel = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-z]*):`)
+var reLabel = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]*):`)
 var reInstr2 = regexp.MustCompile(`^\s*([0-9a-zA-Z\-\+]+)\s+([0-9a-zA-Z\-\+]+)`)
 var reInstr3 = regexp.MustCompile(`^\s*([0-9a-zA-Z\-\+]+)\s+([0-9a-zA-Z\-\+]+)\s+([0-9a-zA-Z\-\+]+)`)
 var reLiteral = regexp.MustCompile(`^\s*([\-]?[0-9]+).*`)
+var reSymbol = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]*).*`)
 var reExpr = regexp.MustCompile(`^\s*([0-9a-zA-z]+)([\-\+])([0-9a-zA-Z]+)`)
 
 // Build symbol table
@@ -50,7 +51,7 @@ func pass1(srcLines []string) map[string]int {
 	pos := 0
 	symbols := make(map[string]int, 0)
 	for _, line := range srcLines {
-		//fmt.Printf("%s\n", line)
+		//		fmt.Printf("%s\n", line)
 		// If there is a label
 		if reLabel.MatchString(line) {
 			label := reLabel.FindStringSubmatch(line)[1]
@@ -66,6 +67,9 @@ func pass1(srcLines []string) map[string]int {
 			pos++
 		} else if reLiteral.MatchString(line) {
 			// If there is a literal value
+			pos++
+		} else if reSymbol.MatchString(line) {
+			// If there is a symbol
 			pos++
 		}
 
@@ -126,6 +130,15 @@ func pass2(srcLines []string, symbols map[string]int) []int {
 			}
 			code = append(code, int(i64))
 			pos++
+		} else if reSymbol.MatchString(line) {
+			// If there is a symbol
+			sym := reSymbol.FindStringSubmatch(line)[1]
+			v, ok := symbols[sym]
+			if !ok {
+				panic(fmt.Sprintf("unknown symbol: %s", sym))
+			}
+
+			code = append(code, v)
 		}
 
 	}
@@ -145,9 +158,7 @@ func resolveOperand(symbols map[string]int, operand string) int {
 		if err != nil {
 			panic(err)
 		}
-		//		fmt.Printf("lit: %d\n", ui64)
 		return int(i64)
-		// If operand is an indexed address
 	}
 	v, ok := symbols[operand]
 	if !ok {
@@ -179,19 +190,35 @@ func asmInstr(symbols map[string]int, operandA string, operandB string, operandC
 	return code
 }
 
+func printCode(code []int) {
+	fmt.Printf("\nCODE\n====")
+	for i, v := range code {
+		if i%10 == 0 {
+			fmt.Printf("\n%03d: ", i)
+		}
+		fmt.Printf("%4d ", v)
+	}
+	fmt.Printf("\n")
+}
+
+func printSymbols(symbols map[string]int) {
+	fmt.Printf("Symbols\n=======\n")
+	for k, v := range symbols {
+		fmt.Printf("%s: %d\n", k, v)
+	}
+	fmt.Printf("\n")
+}
+
 func asm(filename string) ([]int, map[string]int, error) {
 	srcLines, err := readFile(filename)
 	if err != nil {
 		return []int{}, map[string]int{}, err
 	}
 	symbols := pass1(srcLines)
-	/*
-		fmt.Printf("Symbols\n=======\n")
-		for k, v := range symbols {
-			fmt.Printf("%s: %d\n", k, v)
-		}
-	*/
+
 	code := pass2(srcLines, symbols)
-	// fmt.Printf("%v\n", code)
+	//	printSymbols(symbols)
+	//	printCode(code)
+
 	return code, symbols, nil
 }
