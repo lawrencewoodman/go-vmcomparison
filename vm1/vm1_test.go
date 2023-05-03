@@ -11,13 +11,10 @@ var VMtests = []struct {
 	want     map[uint]uint // [memloc]value
 }{
 	{"add12_v1.asm", map[uint]uint{7: 4}},
-	{"add12_v2.asm", map[uint]uint{6: 4}},
 	{"tad_v1.asm", map[uint]uint{12: 32}},
-	{"tad_v2.asm", map[uint]uint{10: 32}},
-	{"tad_v3.asm", map[uint]uint{6: 32}},
+	{"tad_v2.asm", map[uint]uint{8: 32}},
 	{"isz_v1.asm", map[uint]uint{19: 24, 17: 9}},
-	{"isz_v2.asm", map[uint]uint{12: 24, 10: 9}},
-	{"isz_v3.asm", map[uint]uint{9: 24, 7: 9}},
+	{"isz_v2.asm", map[uint]uint{15: 24, 13: 9}},
 	{"loopuntil_v1.asm", map[uint]uint{8: 5000}},
 	{"loopuntil_v2.asm", map[uint]uint{6: 5000}},
 	{"switch_v1.asm", map[uint]uint{44: 2255}},

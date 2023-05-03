@@ -147,13 +147,6 @@ func (s *VM1) execute(opcode, addr uint) (bool, error) {
 		} else {
 			s.pc++
 		}
-	case 8 << 24: // LDO - Load offset
-	case 9 << 24: // STA13 - Store least significant 13 bits
-		s.mem[addr] = s.ac & 0o17777
-		s.pc++
-	case 10 << 24: // INC12 - Increment and store least significant 12 bits
-		s.mem[addr] = (s.mem[addr] + 1) & 0o7777
-		s.pc++
 	case 11 << 24: // DSZ
 		s.mem[addr] = mask32(s.mem[addr] - 1)
 		if s.mem[addr] == 0 {
@@ -165,9 +158,6 @@ func (s *VM1) execute(opcode, addr uint) (bool, error) {
 		s.pc = addr
 	case 13 << 24: // SHL
 		s.mem[addr] = mask32(s.mem[addr] << 1)
-		s.pc++
-	case 14 << 24: // STA12 - Store least significant 12 bits
-		s.mem[addr] = s.ac & 0o7777
 		s.pc++
 	case 15 << 24: // LDX
 		s.x = s.mem[addr]
@@ -183,11 +173,6 @@ func (s *VM1) execute(opcode, addr uint) (bool, error) {
 		} else {
 			s.pc++
 		}
-	case 19 << 24: // STAD - Store A in first 24 bits of word
-		//		fmt.Printf("PC: %d  STAD  preaddr: %d, ", s.pc, addr)
-		s.mem[addr] = (s.mem[addr] & 0xFF000000) | (s.ac & 0xFFFFFF)
-		//		fmt.Printf("postaddr: %d, ac: %d\n", addr, s.ac)
-		s.pc++
 	case 20 << 24: // JSR - Jump to address, store return address in RET
 		//		fmt.Printf("PC: %d  JSR  AC: %d, Y: %d\n", s.pc, s.ac, s.y)
 		s.r = mask32(s.pc + 1)
@@ -225,6 +210,14 @@ func (s *VM1) execute(opcode, addr uint) (bool, error) {
 		}
 		s.mem[addr] = s.ac
 		s.pc++
+	case (2 | 0x40) << 24: // STA II
+		addr, err := s.calcIIAddr(addr)
+		if err != nil {
+			return false, err
+		}
+		s.mem[addr] = s.ac
+		s.pc++
+
 	case (3 | 0x80) << 24: // ADD I
 		// TODO: remove? experimental built-in in-direct
 		addr = s.mem[addr]
@@ -248,19 +241,12 @@ func (s *VM1) execute(opcode, addr uint) (bool, error) {
 		}
 		s.mem[addr] = mask32(s.mem[addr] + 1)
 		s.pc++
-	case (10 | 0x40) << 24: // INC12 II - Increment and store least significant 12 bits
+	case (6 | 0x40) << 24: // INC II
 		addr, err := s.calcIIAddr(addr)
 		if err != nil {
 			return false, err
 		}
-		s.mem[addr] = (s.mem[addr] + 1) & 0o7777
-		s.pc++
-	case (10 | 0x80) << 24: // INC12 I - Increment and store least significant 12 bits
-		addr = s.mem[addr]
-		if addr >= memSize {
-			return false, fmt.Errorf("outside memory range: %d", addr)
-		}
-		s.mem[addr] = (s.mem[addr] + 1) & 0o7777
+		s.mem[addr] = mask32(s.mem[addr] + 1)
 		s.pc++
 	case (12 | 0x40) << 24: // JMP II
 		addr, err := s.calcIIAddr(addr)
@@ -268,23 +254,6 @@ func (s *VM1) execute(opcode, addr uint) (bool, error) {
 			return false, err
 		}
 		s.pc = addr
-	case (17) << 24: // ADD IX
-		// TODO: Clarify encoding as could be:
-		// TODO:   addr = mem[addr+x]  or addr = mem[addr]+x
-		// TODO: Currently:
-		// TODO:   addr = mem[addr+x]
-		// TODO: Encode the X in the bitmap for general use
-		// TODO: This isn't implement the same as the other II
-		// TODO: instructions as it is in flux
-		// TODO: Assume always at least 4096 memory to avoid check
-		base := s.mem[addr]
-		//		fmt.Printf("ADD  IX addr: %d, x: %d, base: %d\n", addr, s.x, base)
-		addr = base + s.x
-		if addr >= memSize {
-			return false, fmt.Errorf("outside memory range: %d", addr)
-		}
-		s.ac = mask32(s.ac + s.mem[addr])
-		s.pc++
 	default:
 		panic(fmt.Sprintf("unknown opcode: %d (%d)", opcode, (opcode&0x3f000000)>>24))
 	}

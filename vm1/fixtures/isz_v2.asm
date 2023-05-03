@@ -1,15 +1,19 @@
-         ; Version 2
-         ; PDP-8 ISZ
-         LDA     memBase
-         ADD     opAddr
-         STA     memLoc
-         INC12 I memLoc
+         ;Version 2
+         ;PDP-8 ISZ
+         INC II  memBase,opAddr
+         LDA II  memBase,opAddr
+         AND     mask12
+         STA II  memBase,opAddr
          JNZ     done
-         INC12   pc
+         INC     pc
+         LDA     pc
+         AND     mask12
+         STA     pc
 done:    HLT     ok
-memBase: 7
+memBase: 10
 opAddr:  5
-memLoc:  0
+mask12:  4095    ; 0o7777
 pc:      9
 ok:      0
-tmp:     23
+val:     23
+
