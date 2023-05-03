@@ -63,43 +63,37 @@ func mask32(n uint) uint {
 // Returns: opcode, addr
 // TODO: describe instruction format
 func (s *VM1) fetch() (uint, uint, error) {
+	var err error
 	if s.pc >= memSize {
 		return 0, 0, fmt.Errorf("outside memory range: %d", s.pc)
 	}
 	ir := s.mem[s.pc]
-	//opcode := (ir & 0x3F000000) >> 24
-	opcode := (ir & 0xFF000000)
-	//opcode := (ir & 0x3F000000)
+	opcode := (ir & 0x3F000000)
 	addr := ir & 0xFFFFFF
-	/*
-		baseIndex := ir & 0x40000000
-		if baseIndex != 0 {
-			baseIndirect := addr >> 12
-			indexIndirect := addr & 0xFFF
-			// TODO: Assume always at least 4096 memory to avoid check
-			base := s.mem[baseIndirect]
-			index := s.mem[indexIndirect]
-			addr = base + index
-		} else {
-			indirect := ir & 0x80000000
-			if indirect != 0 {
-				if addr >= memSize {
-					// TODO: Implement an error
-					panic("outside memory range")
-				}
-				addr = s.mem[addr]
+
+	baseIndex := ir & 0x40000000
+	if baseIndex != 0 {
+		addr, err = s.calcIIAddr(addr)
+		if err != nil {
+			return 0, 0, err
+		}
+	} else {
+		indirect := ir & 0x80000000
+		if indirect != 0 {
+			if addr >= memSize {
+				return 0, 0, fmt.Errorf("outside memory range: %d", addr)
 			}
+			addr = s.mem[addr]
 		}
-		if addr >= memSize {
-			// TODO: Implement an error
-			panic("outside memory range")
-		}
-	*/
+	}
+	if addr >= memSize {
+		return 0, 0, fmt.Errorf("outside memory range: %d", addr)
+	}
 
 	return opcode, addr, nil
 }
 
-// TODO: remove? experimental built-in in-direct
+// TODO: Rename II to BI or similar
 func (s *VM1) calcIIAddr(addr uint) (uint, error) {
 	baseIndirect := addr >> 12
 	indexIndirect := addr & 0xFFF
@@ -188,72 +182,7 @@ func (s *VM1) execute(opcode, addr uint) (bool, error) {
 	case 23 << 24: // STY - Store Y
 		s.mem[addr] = s.y
 		s.pc++
-	case (1 | 0x80) << 24: // LDA I
-		addr = s.mem[addr]
-		if addr >= memSize {
-			return false, fmt.Errorf("outside memory range: %d", addr)
-		}
-		s.ac = s.mem[addr]
-		s.pc++
-	case (1 | 0x40) << 24: // LDA II
-		addr, err := s.calcIIAddr(addr)
-		if err != nil {
-			return false, err
-		}
-		s.ac = s.mem[addr]
-		s.pc++
 
-	case (2 | 0x80) << 24: // STA I
-		addr = s.mem[addr]
-		if addr >= memSize {
-			return false, fmt.Errorf("outside memory range: %d", addr)
-		}
-		s.mem[addr] = s.ac
-		s.pc++
-	case (2 | 0x40) << 24: // STA II
-		addr, err := s.calcIIAddr(addr)
-		if err != nil {
-			return false, err
-		}
-		s.mem[addr] = s.ac
-		s.pc++
-
-	case (3 | 0x80) << 24: // ADD I
-		// TODO: remove? experimental built-in in-direct
-		addr = s.mem[addr]
-		if addr >= memSize {
-			return false, fmt.Errorf("outside memory range: %d", addr)
-		}
-		s.ac = mask32(s.ac + s.mem[addr])
-		s.pc++
-	case (3 | 0x40) << 24: // ADD II
-		addr, err := s.calcIIAddr(addr)
-		if err != nil {
-			return false, err
-		}
-		s.ac = mask32(s.ac + s.mem[addr])
-		s.pc++
-
-	case (6 | 0x80) << 24: // INC I
-		addr = s.mem[addr]
-		if addr >= memSize {
-			return false, fmt.Errorf("outside memory range: %d", addr)
-		}
-		s.mem[addr] = mask32(s.mem[addr] + 1)
-		s.pc++
-	case (6 | 0x40) << 24: // INC II
-		addr, err := s.calcIIAddr(addr)
-		if err != nil {
-			return false, err
-		}
-		s.mem[addr] = mask32(s.mem[addr] + 1)
-		s.pc++
-	case (12 | 0x40) << 24: // JMP II
-		addr, err := s.calcIIAddr(addr)
-		if err != nil {
-			return false, err
-		}
-		s.pc = addr
 	default:
 		panic(fmt.Sprintf("unknown opcode: %d (%d)", opcode, (opcode&0x3f000000)>>24))
 	}
