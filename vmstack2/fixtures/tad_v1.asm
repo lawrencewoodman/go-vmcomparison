@@ -6,9 +6,10 @@
 	        FETCH
 	        FETCH lac
 	        ADD
-        	STORE13 lac
+			AND 8191    ; 13-bit mask
+        	STORE lac
 	        HLT 1
-memBase:    8
+memBase:    9
 opAddr:     3
 lac:        9
 val:        23

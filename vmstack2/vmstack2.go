@@ -127,20 +127,6 @@ func (v *VMStack2) Step() (bool, error) {
 		} else {
 			v.pc++
 		}
-	case 9 << 24: // STORE13 - Store least significant 13 bits
-		//		if operand > 0 {
-		//			addr = operand
-		//		} else {
-		addr := v.dstack.pop()
-		//		}
-		if addr >= memSize {
-			return false, fmt.Errorf("outside memory range: %d", addr)
-		}
-		v.mem[addr] = v.dstack.pop() & 0o17777
-		v.pc++
-	case 10 << 24: // INC12 - Increment and store least significant 12 bits
-		v.dstack.replace((v.dstack.peek() + 1) & 0o7777)
-		v.pc++
 	case 11 << 24: // DJNZ - (val addr -- val) - Decrement and Jump if not Zero
 		//		if operand > 0 {
 		//			addr = operand
@@ -164,15 +150,6 @@ func (v *VMStack2) Step() (bool, error) {
 	case 13 << 24: // SHL
 		v.dstack.replace(mask32(v.dstack.peek() << 1))
 		v.pc++
-	case 14 << 24: // STORE12 - Store least significant 12 bits
-		addr := v.dstack.peek()
-		if addr >= memSize {
-			return false, fmt.Errorf("outside memory range: %d", addr)
-		}
-		val := v.dstack.pop()
-		v.mem[addr] = val & 0o7777
-		//		fmt.Printf("PC: %d  STORE12 mem[%d] = %d\n", v.pc, addr, val)
-		v.pc++
 	case 15 << 24: // LIT - Put the 24-bit operand on the stack
 		if operand == 0 {
 			v.dstack.push(0)
@@ -180,10 +157,6 @@ func (v *VMStack2) Step() (bool, error) {
 		// else operand is pushed to TOS at start
 		// of this function
 		v.pc++
-	case 16 << 24:
-		panic("TODO: remove this")
-	case 17 << 24:
-		panic("TODO: remove this")
 	case 18 << 24: // DROP - (n --)
 		v.dstack.pop()
 		//fmt.Printf("PC: %d  DROP %d\n", v.pc, a)
@@ -203,12 +176,6 @@ func (v *VMStack2) Step() (bool, error) {
 		}
 		v.dstack.replace(v.mem[addr])
 		v.pc++
-	case 21 << 24:
-		panic("TODO: Remove this")
-	case 22 << 24:
-		panic("TODO: Remove this")
-	case 23 << 24:
-		panic("TODO: Remove this")
 	case 24 << 24: // ADDBI - (n base index -- n)
 		addr := v.dstack.pop() + v.dstack.pop()
 		if addr >= memSize {
@@ -218,10 +185,6 @@ func (v *VMStack2) Step() (bool, error) {
 		//		fmt.Printf("PC: %d  ADDBI addr: %d, newVal: %d\n", v.pc, addr, val)
 		v.dstack.replace(val)
 		v.pc++
-	case 25 << 24:
-		panic("TODO: remove this")
-	case 26 << 24:
-		panic("TODO: remove this")
 	case 27 << 24: // FETCHI
 		addr := v.dstack.peek()
 		if addr >= memSize {

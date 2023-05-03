@@ -11,9 +11,8 @@ var tests = []struct {
 	want     map[uint]uint // [memloc]value
 }{
 	{"add12_v1.asm", map[uint]uint{7: 4}},
-	{"tad_v1.asm", map[uint]uint{10: 32}},
-	{"tad_v2.asm", map[uint]uint{9: 32}},
-	{"tad_v3.asm", map[uint]uint{11: 32}},
+	{"tad_v1.asm", map[uint]uint{11: 32}},
+	{"tad_v2.asm", map[uint]uint{10: 32}},
 	{"isz_v1.asm", map[uint]uint{20: 9, 21: 24}},
 	{"isz_v2.asm", map[uint]uint{19: 9, 20: 24}},
 	{"isz_v3.asm", map[uint]uint{19: 9, 20: 24}},
