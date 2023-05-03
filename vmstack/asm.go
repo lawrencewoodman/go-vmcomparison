@@ -1,12 +1,12 @@
 /*
- * A simple assembler for vmstack2
+ * A simple assembler for vmstack
  *
  * Copyright (C) 2023 Lawrence Woodman <lwoodman@vlifesystems.com>
  *
  * Licensed under an MIT licence.  Please see LICENCE.md for details.
  */
 
-package vmstack2
+package vmstack
 
 import (
 	"bufio"
