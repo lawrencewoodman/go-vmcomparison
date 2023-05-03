@@ -57,14 +57,32 @@ func (v *VM2) LoadRoutine(routine []uint) {
 // Returns: opcode, operandA, operandB
 // TODO: describe instruction format
 func (v *VM2) fetch() (uint, uint, uint, error) {
+	var err error
 	if v.pc+1 >= memSize {
 		return 0, 0, 0, fmt.Errorf("outside memory range: %d", v.pc+1)
 	}
 	ir := v.mem[v.pc]
 	// fmt.Printf("fetch PC: %d, ir: %d\n", v.pc, ir)
-	opcode := (ir & 0xFF000000)
+	opcode := (ir & 0x3F000000)
 	operandA := (ir & 0xFFFFFF)
 	operandB := v.mem[v.pc+1]
+
+	// If addressing mode: operand A indirect
+	if ir&0x80000000 == 0x80000000 {
+		operandA, err = v.getMemValue(operandA)
+		if err != nil {
+			return 0, 0, 0, err
+		}
+	}
+
+	// If addressing mode: operand B indirect
+	if ir&0x40000000 == 0x40000000 {
+		operandB, err = v.getMemValue(operandB)
+		if err != nil {
+			return 0, 0, 0, err
+		}
+	}
+
 	// TODO: Decide if should increment PC here
 	return opcode, operandA, operandB, nil
 }
@@ -81,33 +99,9 @@ func (v *VM2) getMemValue(addr uint) (uint, error) {
 	return addr, nil
 }
 
-func (v *VM2) op_ADD(operandA uint, operandB uint) {
-	v.mem[operandB] = mask32(v.mem[operandA] + v.mem[operandB])
-	v.pc += 2
-}
-
-func (v *VM2) op_AND(operandA uint, operandB uint) {
-	v.mem[operandB] = v.mem[operandA] & v.mem[operandB]
-	v.pc += 2
-}
-
-// JMP to operandA+operandB
-func (v *VM2) op_JMP(operandA uint, operandB uint) {
-	v.pc = mask32(operandA + operandB)
-}
-
-func (v *VM2) op_JNZ(operandA uint, operandB uint) {
-	if v.mem[operandA] != 0 {
-		v.pc = operandB
-	} else {
-		v.pc += 2
-	}
-}
-
 // execute executes the supplied instruction
 // Returns: hlt, error
 func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
-	var err error
 	// fmt.Printf("PC: %d, opcode: %d (%d), A: %d, B: %d\n", v.pc, opcode, (opcode&0x3F000000)>>24, operandA, operandB)
 	switch opcode {
 	case 0 << 24: // HLT
@@ -121,7 +115,8 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 		v.mem[operandB] = mask32(v.pc + 2)
 		v.pc = operandA
 	case 3 << 24: // ADD
-		v.op_ADD(operandA, operandB)
+		v.mem[operandB] = mask32(v.mem[operandA] + v.mem[operandB])
+		v.pc += 2
 	case 4 << 24: // DJNZ
 		v.mem[operandA] = mask32(v.mem[operandA] - 1)
 		if v.mem[operandA] != 0 {
@@ -130,57 +125,25 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 			v.pc += 2
 		}
 	case 5 << 24: // JMP
-		v.op_JMP(operandA, operandB)
+		v.pc = mask32(operandA + operandB)
 	case 6 << 24: // LIT
 		//fmt.Printf("PC: %d  LIT  A: %d, B: %d\n", v.pc, operandA, operandB)
 		v.mem[operandB] = operandA
 		v.pc += 2
 	case 7 << 24: // AND
-		v.op_AND(operandA, operandB)
+		v.mem[operandB] = v.mem[operandA] & v.mem[operandB]
+		v.pc += 2
 	case 8 << 24: // SHL
 		v.mem[operandB] = mask32(v.mem[operandB] << v.mem[operandA])
 		v.pc += 2
 	case 9 << 24: // JNZ
-		v.op_JNZ(operandA, operandB)
-	case (3 | 0x40) << 24: // ADD DI
-		operandB, err = v.getMemValue(operandB)
-		if err != nil {
-			return false, err
+		if v.mem[operandA] != 0 {
+			v.pc = operandB
+		} else {
+			v.pc += 2
 		}
-		v.op_ADD(operandA, operandB)
-	case (3 | 0x80) << 24: // ADD I
-		operandA, err = v.getMemValue(operandA)
-		if err != nil {
-			return false, err
-		}
-		v.op_ADD(operandA, operandB)
-	case (5 | 0x80) << 24: // JMP I
-		operandA, err = v.getMemValue(operandA)
-		if err != nil {
-			return false, err
-		}
-		v.op_JMP(operandA, operandB)
-	case (5 | 0x40) << 24: // JMP DI
-		// TODO: DI doesn't quite feel right - look into this
-		operandB, err = v.getMemValue(operandB)
-		if err != nil {
-			return false, err
-		}
-		v.op_JMP(operandA, operandB)
-	case (7 | 0x40) << 24: // AND DI
-		operandB, err = v.getMemValue(operandB)
-		if err != nil {
-			return false, err
-		}
-		v.op_AND(operandA, operandB)
-	case (9 | 0x80) << 24: // JNZ I
-		operandA, err = v.getMemValue(operandA)
-		if err != nil {
-			return false, err
-		}
-		v.op_JNZ(operandA, operandB)
 	default:
-		panic(fmt.Sprintf("unknown opcode: %d (%d)", opcode, (opcode&0x3f000000)>>24))
+		return false, fmt.Errorf("unknown opcode: %d (%d)", opcode, (opcode&0x3f000000)>>24)
 	}
 	return false, nil
 }
