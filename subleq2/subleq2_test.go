@@ -21,6 +21,7 @@ var tests = []struct {
 	{"tad_v2.asm", map[int]int{129: 32, 138: 32}},
 	{"tad_v3.asm", map[int]int{51: 32, 53: 32}},
 	{"tad_v4.asm", map[int]int{50: 32}},
+	{"tad_v5.asm", map[int]int{44: 32}},
 	{"switch_v1.asm", map[int]int{139: 2255}},
 	{"switch_v2.asm", map[int]int{111: 2255}},
 }
