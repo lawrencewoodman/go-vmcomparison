@@ -44,58 +44,41 @@ case0:      ; ADD     l11 lac
             lm11 lac
             ; JMP     decCnt
             z z decCnt
-            0    ; padding to make up to 8 words
-            0    ; /
-            
 
 case1:      ; ADD     l23 lac
             lm23 lac
             ; JMP     decCnt
             z z decCnt
-            0
-            0
 
 case2:      ; ADD     l56 lac
             lm56 lac
             ; JMP     decCnt
             z z decCnt
-            0
-            0
 
 case3:      ; ADD     l79 lac
             lm79 lac
             ; JMP     decCnt
             z z decCnt
-            0
-            0
 
 case4:      ; ADD     l123 lac
             lm123 lac
             ; JMP     decCnt
             z z decCnt
-            0
-            0
 
 case5:      ; ADD     l367 lac
             lm367 lac
             ; JMP     decCnt
             z z decCnt
-            0
-            0
 
 case6:      ; ADD     l592 lac
             lm592 lac
             ; JMP     decCnt
             z z decCnt
-            0
-            0
 
 case7:      ; ADD     l1001 lac
             lm1001 lac
             ; JMP     decCnt
             z z decCnt
-            0
-            0
 
 lac:     3
 z:       0
