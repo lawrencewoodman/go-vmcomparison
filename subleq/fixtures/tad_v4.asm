@@ -6,10 +6,8 @@
 
                 ; MOV memBase+opAddr addit (memLoc)
                 addit addit
-                memBase z
-                opAddr z
-                z addit
-                z z
+                mmemBase addit
+                mopAddr addit
 
                 ; ADD I memLoc lac
                 ; memLoc is stored in first location of self-modifying instruction
@@ -38,7 +36,7 @@ l8192c: 8192    ; Used because l8192 gets temporarily corrupted
 lm1:    -1
 lm8192: -8192
 
-memBase: 47     ; TODO: be able to put memBase or similar here
-opAddr:  3
+mmemBase: 0-41  ; TODO: be able to put memBase or similar here
+mopAddr:  0-3
 lac:     9
 val:     23

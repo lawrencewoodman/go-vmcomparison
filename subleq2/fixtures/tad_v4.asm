@@ -6,10 +6,8 @@
 
                 ; MOV memBase+opAddr TO memLoc
                 memLoc memLoc
-                memBase z
-                opAddr z
-                z memLoc
-                z z
+                mmemBase memLoc
+                mopAddr memLoc
 
                 ; ADD I memLoc lac
                 [memLoc] z
@@ -37,8 +35,8 @@ l8192c: 8192    ; Used because l8192 gets temporarily corrupted
 lm1:    -1
 lm8192: -8192
 
-memBase: 47     ; TODO: be able to put memBase or similar here
-opAddr:  4
+mmemBase: 0-41  ; TODO: be able to put memBase or similar here
+mopAddr:  0-4
 memLoc:  0
 lac:     9
 val:     23
