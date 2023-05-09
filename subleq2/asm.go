@@ -56,6 +56,10 @@ func pass1(srcLines []string) map[string]int {
 		if reLabel.MatchString(line) {
 			label := reLabel.FindStringSubmatch(line)[1]
 			matchIndices := reLabel.FindStringSubmatchIndex(line)
+			_, labelExists := symbols[label]
+			if labelExists {
+				panic(fmt.Sprintf("label already exists: %s", label))
+			}
 			symbols[label] = pos
 			line = line[matchIndices[1]:]
 		}
