@@ -15,6 +15,7 @@ var tests = []struct {
 	{"add12_v1.asm", map[int]int{98: 4}},
 	{"add12_v2.asm", map[int]int{98: 4}},
 	{"add12_v3.asm", map[int]int{29: 4}},
+	{"and_v1.asm", map[int]int{75: 4499}},
 	{"isz_v1.asm", map[int]int{75: 9, 76: 24}},
 	{"jsr_v1.asm", map[int]int{22: 50}},
 	{"tad_v1.asm", map[int]int{129: 32, 138: 32}},
@@ -90,6 +91,18 @@ func TestAND(t *testing.T) {
 	}
 }
 
+func TestOR(t *testing.T) {
+	for a := 0; a <= math.MaxUint8; a++ {
+		for b := 0; b <= math.MaxUint8; b++ {
+			want := a | b
+			got := op_OR(a, b, 8)
+			if want != got {
+				t.Errorf("op_OR  a: %8b, b: %8b, got: %8b, want: %8b", a, b, got, want)
+			}
+		}
+	}
+}
+
 // This is just here to test logic of routine suitable for running under SUBLEQ
 func op_AND(a, b, n int) int {
 	hbitval := int(math.Pow(2, float64(n-1)))
@@ -104,8 +117,34 @@ func op_AND(a, b, n int) int {
 		if b >= hbitval {
 			b -= hbitval
 			if m == 1 {
-				res += 1
+				res++
 			}
+		}
+
+		a += a
+		b += b
+	}
+	return res
+}
+
+// This is just here to test logic of routine suitable for running under SUBLEQ
+func op_OR(a, b, n int) int {
+	hbitval := int(math.Pow(2, float64(n-1)))
+	res := 0
+	for x := 0; x < n; x++ {
+		m := 0
+		res += res
+		if a >= hbitval {
+			m++
+			a -= hbitval
+		}
+		if b >= hbitval {
+			m++
+			b -= hbitval
+		}
+
+		if m > 0 {
+			res++
 		}
 
 		a += a
