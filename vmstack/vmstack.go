@@ -63,32 +63,17 @@ func (v *VMStack) Step() (bool, error) {
 	// TODO: do something with operand for LIT, STORE, FETCH, ADD?
 	switch opcode {
 	case 0 << 24: // HLT
-		//		if operand > 0 {
-		//			v.hltVal = operand
-		//		} else {
 		v.hltVal = v.dstack.pop()
-		//		}
 		return true, nil
 	case 1 << 24: // FETCH
-		//		if operand > 0 {
-		//			if operand >= memSize {
-		//				return false, fmt.Errorf("outside memory range: %d", operand)
-		//			}
-		//			v.dstack.push(v.mem[operand])
-		//		} else {
 		addr := v.dstack.peek()
 		if addr >= memSize {
 			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		v.dstack.replace(v.mem[addr])
-		//		}
 		v.pc++
 	case 2 << 24: // STORE (n addr --)
-		//		if operand > 0 {
-		//			addr = operand
-		//		} else {
 		addr := v.dstack.pop()
-		//		}
 		if addr >= memSize {
 			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
@@ -97,10 +82,7 @@ func (v *VMStack) Step() (bool, error) {
 		//		fmt.Printf("PC: %d  STORE n:%d addr:%d\n", v.pc, v.mem[addr], addr)
 		v.pc++
 	case 3 << 24: // ADD
-		//		a := operand
-		//		if operand == 0 {
 		a := v.dstack.pop()
-		//		}
 		b := v.dstack.peek()
 		c := mask32(a + b)
 		v.dstack.replace(c)
@@ -110,11 +92,7 @@ func (v *VMStack) Step() (bool, error) {
 		v.dstack.replace(mask32(v.dstack.pop() - v.dstack.peek()))
 		v.pc++
 	case 5 << 24: // AND
-		//		if operand > 0 {
-		//			v.dstack.replace(operand & v.dstack.peek())
-		//		} else {
 		v.dstack.replace(v.dstack.pop() & v.dstack.peek())
-		//		}
 		v.pc++
 	case 6 << 24: // INC
 		v.dstack.replace(mask32(v.dstack.peek() + 1))
@@ -128,11 +106,7 @@ func (v *VMStack) Step() (bool, error) {
 			v.pc++
 		}
 	case 11 << 24: // DJNZ - (val addr -- val) - Decrement and Jump if not Zero
-		//		if operand > 0 {
-		//			addr = operand
-		//		} else {
 		addr := v.dstack.pop()
-		//		}
 		val := v.dstack.peek()
 		val = mask32(val - 1)
 		v.dstack.replace(val)
@@ -142,11 +116,7 @@ func (v *VMStack) Step() (bool, error) {
 			v.pc++
 		}
 	case 12 << 24: // JMP
-		//		if operand > 0 {
-		//			v.pc = operand
-		//		} else {
 		v.pc = v.dstack.pop()
-		//		}
 	case 13 << 24: // SHL
 		v.dstack.replace(mask32(v.dstack.peek() << 1))
 		v.pc++
@@ -162,12 +132,10 @@ func (v *VMStack) Step() (bool, error) {
 		//fmt.Printf("PC: %d  DROP %d\n", v.pc, a)
 		v.pc++
 	case 19 << 24: // SWAP - (a b -- b a)
-		a := v.dstack.pop()
-		b := v.dstack.peek()
-		v.dstack.replace(a)
-		v.dstack.push(b)
-		// TODO: see if we can use peek/replace here
-		//fmt.Printf("PC: %d  SWAP (%d %d -- %d %d\n", v.pc, a, b, b, a)
+		b := v.dstack.pop()
+		a := v.dstack.peek()
+		v.dstack.replace(b)
+		v.dstack.push(a)
 		v.pc++
 	case 20 << 24: // FETCHBI - (base index -- n)
 		addr := v.dstack.pop() + v.dstack.peek()
@@ -198,11 +166,7 @@ func (v *VMStack) Step() (bool, error) {
 		v.pc++
 	case 28 << 24: // JSR
 		v.rstack.push(mask32(v.pc + 1))
-		//		if operand > 0 {
-		//			v.pc = operand
-		//		} else {
 		v.pc = v.dstack.pop()
-		//		}
 	case 29 << 24: // RET
 		v.pc = v.rstack.pop()
 
