@@ -18,6 +18,7 @@ var VMtests = []struct {
 	{"loopuntil_v1.asm", map[uint]uint{8: 5000}},
 	{"loopuntil_v2.asm", map[uint]uint{6: 5000}},
 	{"switch_v1.asm", map[uint]uint{44: 2255}},
+	{"switch_v2.asm", map[uint]uint{50: 2255}},
 	{"jsr_v1.asm", map[uint]uint{3: 50}},
 }
 

@@ -59,11 +59,12 @@ func readFile(filename string) ([]string, error) {
 }
 
 // Regular expressions for parts of a line
-var reLabel = regexp.MustCompile(`^\s*([a-zA-Z]+[0-9a-zA-z]*):`)
+var reLabel = regexp.MustCompile(`^\s*([a-zA-Z]+[0-9a-zA-Z]*):`)
 var reInstr = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]+)\s+`)
 var reAddrMode = regexp.MustCompile(`^\s*([iI]{1,2})\s+`)
 var reOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z,]+).*`)
 var reLiteral = regexp.MustCompile(`^\s*([0-9]+).*`)
+var reSymbol = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]*).*`)
 var reIndexOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z]+),([0-9a-zA-z]+).*`)
 
 // Build symbol table
@@ -83,10 +84,11 @@ func pass1(srcLines []string) map[string]uint {
 		// If there is an instruction
 		if reInstr.MatchString(line) {
 			pos++
-		}
-
-		// If there is a literal value
-		if reLiteral.MatchString(line) {
+		} else if reLiteral.MatchString(line) {
+			// If there is a literal value
+			pos++
+		} else if reSymbol.MatchString(line) {
+			// If there is a symbol
 			pos++
 		}
 	}
@@ -133,10 +135,19 @@ func pass2(srcLines []string, symbols map[string]uint) []uint {
 				panic(fmt.Sprintf("remaining line: %s", line))
 			}
 			code = append(code, asmInstr(symbols, instr, addrMode, operand))
-		}
 
-		// If there is a literal value
-		if reLiteral.MatchString(line) {
+		} else if reSymbol.MatchString(line) {
+			// If there is a symbol
+			sym := reSymbol.FindStringSubmatch(line)[1]
+			v, ok := symbols[sym]
+			if !ok {
+				panic(fmt.Sprintf("unknown symbol: %s", sym))
+			}
+
+			code = append(code, v)
+
+		} else if reLiteral.MatchString(line) {
+			// If there is a literal value
 			lit := reLiteral.FindStringSubmatch(line)[1]
 			ui64, err := strconv.ParseUint(lit, 10, 64)
 			if err != nil {
@@ -166,8 +177,11 @@ func resolveOperand(symbols map[string]uint, operand string) uint {
 		return (baseAddr << 12) + indexAddr
 		// TODO: error if > 4095
 	}
-	return symbols[operand]
-
+	v, ok := symbols[operand]
+	if !ok {
+		panic(fmt.Sprintf("unknown operand: %s", operand))
+	}
+	return v
 }
 
 func asmInstr(symbols map[string]uint, instr string, addrMode string, operand string) uint {

@@ -100,7 +100,7 @@ func (s *VM1) calcIIAddr(addr uint) (uint, error) {
 	// TODO: Assume always at least 4096 memory to avoid check
 	base := s.mem[baseIndirect]
 	index := s.mem[indexIndirect]
-	//fmt.Printf("II baseIndirect: %d, indexIndirect: %d, base: %d, index: %d\n", baseIndirect, indexIndirect, base, index)
+	// fmt.Printf("II baseIndirect: %d, indexIndirect: %d, base: %d, index: %d\n", baseIndirect, indexIndirect, base, index)
 	addr = base + index
 	if addr >= memSize {
 		return 0, fmt.Errorf("outside memory range: %d", addr)
@@ -111,7 +111,7 @@ func (s *VM1) calcIIAddr(addr uint) (uint, error) {
 // execute executes the supplied instruction
 // Returns: hlt, error
 func (s *VM1) execute(opcode, addr uint) (bool, error) {
-	//	fmt.Printf("PC: %d, opcode: %d (%d), addr: %d, AC: %d\n", s.pc, opcode, (opcode&0x3F000000)>>24, addr, s.ac)
+	// fmt.Printf("PC: %d, opcode: %d (%d), addr: %d, AC: %d\n", s.pc, opcode, (opcode&0x3F000000)>>24, addr, s.ac)
 	switch opcode {
 	case 0 << 24: // HLT
 		s.hltVal = s.mem[addr]
