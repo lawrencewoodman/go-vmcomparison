@@ -31,6 +31,18 @@ func initLoopUntil() ([]uint, func(v *Native)) {
 	return mem, action
 }
 
+func initAnd() ([]uint, func(v *Native)) {
+	mem := []uint{
+		4503, // lac
+		3003, // value
+	}
+	action := func(v *Native) {
+		opAddr := 1
+		v.mem[0] &= v.mem[opAddr] | 0o10000
+	}
+	return mem, action
+}
+
 func initTad() ([]uint, func(v *Native)) {
 	mem := []uint{
 		9,  // lac
@@ -109,6 +121,7 @@ var tests = []struct {
 	wantPC uint
 }{
 	{"add12", initAdd12, map[uint]uint{1: 4}, 0},
+	{"and", initAnd, map[uint]uint{0: 4499}, 0},
 	{"tad", initTad, map[uint]uint{0: 32}, 0},
 	{"isz", initIsz, map[uint]uint{0: 24}, 0},
 	{"jsr", initJsr, map[uint]uint{0: 50}, 0},
