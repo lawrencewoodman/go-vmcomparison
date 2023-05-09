@@ -11,6 +11,7 @@ var VMtests = []struct {
 	want     map[uint]uint // [memloc]value
 }{
 	{"add12_v1.asm", map[uint]uint{7: 4}},
+	{"and_v1.asm", map[uint]uint{9: 4499}},
 	{"tad_v1.asm", map[uint]uint{12: 32}},
 	{"tad_v2.asm", map[uint]uint{8: 32}},
 	{"isz_v1.asm", map[uint]uint{19: 24, 17: 9}},

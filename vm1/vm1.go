@@ -182,7 +182,9 @@ func (s *VM1) execute(opcode, addr uint) (bool, error) {
 	case 23 << 24: // STY - Store Y
 		s.mem[addr] = s.y
 		s.pc++
-
+	case 24 << 24: // OR
+		s.ac |= s.mem[addr]
+		s.pc++
 	default:
 		panic(fmt.Sprintf("unknown opcode: %d (%d)", opcode, (opcode&0x3f000000)>>24))
 	}
