@@ -13,6 +13,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"sort"
 	"strconv"
 )
 
@@ -187,18 +188,28 @@ func asmInstr(symbols map[string]int, operandA string, operandB string, operandC
 	return code
 }
 
+func printSymbols(symbols map[string]int) {
+	labels := make([]string, 0, len(symbols))
+	for l := range symbols {
+		labels = append(labels, l)
+	}
+	sort.Strings(labels)
+
+	fmt.Printf("Symbols\n=======\n")
+	for _, l := range labels {
+		fmt.Printf("%s: %d\n", l, symbols[l])
+	}
+	fmt.Printf("\n")
+}
+
 func asm(filename string) ([]int, map[string]int, error) {
 	srcLines, err := readFile(filename)
 	if err != nil {
 		return []int{}, map[string]int{}, err
 	}
 	symbols := pass1(srcLines)
-	/*
-		fmt.Printf("Symbols\n=======\n")
-		for k, v := range symbols {
-			fmt.Printf("%s: %d\n", k, v)
-		}
-	*/
+	//	printSymbols(symbols)
+
 	code := pass2(srcLines, symbols)
 	// fmt.Printf("%v\n", code)
 	return code, symbols, nil
