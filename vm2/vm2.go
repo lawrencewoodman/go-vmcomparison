@@ -133,10 +133,13 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 	case 7 << 24: // AND
 		v.mem[operandB] = v.mem[operandA] & v.mem[operandB]
 		v.pc += 2
-	case 8 << 24: // SHL
+	case 8 << 24: // OR
+		v.mem[operandB] = v.mem[operandA] | v.mem[operandB]
+		v.pc += 2
+	case 9 << 24: // SHL
 		v.mem[operandB] = mask32(v.mem[operandB] << v.mem[operandA])
 		v.pc += 2
-	case 9 << 24: // JNZ
+	case 10 << 24: // JNZ
 		if v.mem[operandA] != 0 {
 			v.pc = operandB
 		} else {
