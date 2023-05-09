@@ -35,6 +35,7 @@ var instructions = map[string]uint{
 	"JSR":     28 << 24,
 	"RET":     29 << 24,
 	"DUP":     30 << 24,
+	"OR":      31 << 24,
 }
 
 func readFile(filename string) ([]string, error) {

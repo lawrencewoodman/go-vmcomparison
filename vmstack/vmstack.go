@@ -209,6 +209,10 @@ func (v *VMStack) Step() (bool, error) {
 	case 30 << 24: // DUP
 		v.dstack.push(v.dstack.peek())
 		v.pc++
+	case 31 << 24: // OR
+		v.dstack.replace(v.dstack.pop() | v.dstack.peek())
+		v.pc++
+
 	}
 	return false, nil
 }
