@@ -1,22 +1,14 @@
-                ; Version 1
+                ; Version 2
                 ; PDP-8 ISZ
                 ; Assumes memory will only every contain a 12-bit value
                 ; memory will only ever contain a 12-bit value
 
-                ; MOV memBase TO getit+3, setit, setit+1, setit+7 (memLoc)
+                ; MOV memBase+opAddr TO getit+3, setit, setit+1, setit+7 (memLoc)
                 getit+3 getit+3
                 setit setit
                 setit+1 setit+1
                 setit+7 setit+7
                 memBase z
-                z getit+3
-                z setit
-                z setit+1
-                z setit+7
-                z z
-
-                ; TODO: combine this with above
-                ; ADD opAddr TO getit+3, setit, setit+1, setit+7 (memLoc)
                 opAddr z
                 z getit+3
                 z setit
@@ -54,7 +46,7 @@ setit:          0 0
                 l4096 l4096
                 lm4096 l4096
 
-                ; IF t <= 0 JUMP to
+                ; IF t <= 0 JUMP to tle
                 z t tle
                 ; ELSE JUMP to done
                 z z done
@@ -70,16 +62,16 @@ teq:            lm1 pc
                 ; IF pc >= 4096 JUMP to pcoverflow
                 pc l4096 pcoverflow
                 ; ELSE JUMP to done
-                z z done
+                z z pcresl4096
 
 pcoverflow:     ; Remove overflow amount
                 l4096c pc
 
-done:           ; Restore l4096
+pcresl4096:     ; Restore l4096
                 l4096 l4096
                 lm4096 l4096
 
-                ; HLT
+done:           ; HLT
                 lm1 1000
 
 z:      0
@@ -88,7 +80,7 @@ l4096:  4096
 l4096c: 4096    ; Used because l4096 temporarily gets corrupted
 lm1:    -1
 lm4096: -4096
-memBase: 129
+memBase: 114
 opAddr:  3
 pc:      9
 val:     23

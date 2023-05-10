@@ -1,16 +1,13 @@
                 ; Version 1
                 ; PDP-8 TAD
+                ; Assumes lac will only every contain a 13-bit value and
+                ; memory will only ever contain a 12-bit value
+                ; and checks for overflow rather than using AND
 
-                ; MOV memBase addit (memLoc)
+                ; MOV memBase+opAddr addit (memLoc)
                 addit addit
-                memBase z
-                z addit
-                z z
-
-                ; ADD opAddr addit (memLoc)
-                opAddr z
-                z addit
-                z z
+                mmemBase addit
+                mopAddr addit
 
                 ; ADD I memLoc lac
                 ; memLoc is stored in first location of self-modifying instruction
@@ -18,89 +15,28 @@ addit:          0 z
                 z lac
                 z z
 
-                ;--------------------------
-                ; AND mask13 lac
-                ; Routine taken from add12
-                ;--------------------------
-                ; Loop 31 times
-                l30 cnt
-loop:
-                ; m := 0
-                m m
+                ; IF lac >= 8192 JUMP to overflow
+                lac l8192 overflow
+                ; ELSE JUMP to done
+                z z done
 
-                ; res << 2
-                res z
-                z res
-                z z
+overflow:       ; Remove overflow amount
+                l8192c lac
 
-                ; IF mask13 >= lhbitval JUMP to mhbit
-                mask13 lhbitvalc mhbit
-                ; Zero lhbitvalc and JUMP to acheck
-                lhbitvalc lhbitvalc acheck
-
-mhbit:          ; INC m
-                lm1 m
-                ; mask13 -= lhbitval
-                lhbitval mask13
-                ; COPY lhbitval to lhbitvalc (using subtraction of lmhbitval)
-                lhbitvalc lhbitvalc
-
-acheck:         lmhbitval lhbitvalc
-                ; IF lac >= lhbitval JUMP to ahbit
-                lac lhbitvalc ahbit
-                ; COPY lhbitval to lhbitvalc (using subtraction of lmhbitval)
-                lhbitvalc lhbitvalc
-                lmhbitval lhbitvalc
-                z z cont
-
-ahbit:          ; lac -= lhbitval
-                lhbitval lac
-                ; COPY lhbitval to lhbitvalc (using subtraction of lmhbitval)
-                lhbitvalc lhbitvalc
-                lmhbitval lhbitvalc
-                ; IF m <= 0 JUMP to cont
-                z m cont
-
-                ; High bits match
-                ; res++
-                lm1 res
-
-cont:           ; mask13 << 2
-                mask13 z
-                z mask13
-                z z
-
-                ; lac << 2
-                lac z
-                z lac
-                z z
-
-                ; ADD l1 to cnt and JUMP to loop if <= 0
-                lm1 cnt loop
-
-                ;------------
-                ; End of AND
-                ;------------
-
-                lac lac
-                res z
-                z lac
-                z z
+done:           ; Restore l8192
+                l8192 l8192
+                lm8192 l8192
 
                 ; HLT
-done:           lm1 1000
+                lm1 1000
 
 z:      0
-m:      0
-cnt:    0
-res:    0
-lhbitval:   1073741824
-lhbitvalc:  1073741824
+l8192:  8192
+l8192c: 8192    ; Used because l8192 gets temporarily corrupted
 lm1:    -1
-l30:    30
-lmhbitval: -1073741824
-mask13: 8191    ; 0o17777
-memBase: 136
-opAddr:  3
+lm8192: -8192
+
+mmemBase: 0-41  ; TODO: be able to put memBase or similar here
+mopAddr:  0-3
 lac:     9
 val:     23
