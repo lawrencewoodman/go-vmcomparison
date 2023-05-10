@@ -61,10 +61,11 @@ func readFile(filename string) ([]string, error) {
 }
 
 // Regular expressions for parts of a line
-var reLabel = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-z]*):`)
+var reLabel = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]*):`)
 var reInstr = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]+)\s*`)
 var reOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z]+)\s*`)
 var reLiteral = regexp.MustCompile(`^\s*([0-9]+)\s*`)
+var reSymbol = regexp.MustCompile(`^\s*!([a-zA-Z][0-9a-zA-Z]*).*`)
 var reComment = regexp.MustCompile(`^\s*(;.*)$`)
 
 // Build symbol table
@@ -85,10 +86,11 @@ func pass1(srcLines []string) map[string]uint {
 		if reInstr.MatchString(line) {
 			pos++
 			continue
-		}
-
-		// If there is a literal value
-		if reLiteral.MatchString(line) {
+		} else if reLiteral.MatchString(line) {
+			// If there is a literal value
+			pos++
+		} else if reSymbol.MatchString(line) {
+			// If there is a symbol
 			pos++
 		}
 	}
@@ -134,6 +136,14 @@ func pass2(srcLines []string, symbols map[string]uint) []uint {
 				panic(err)
 			}
 			code = append(code, uint(ui64))
+		} else if reSymbol.MatchString(line) {
+			// If there is a symbol
+			sym := reSymbol.FindStringSubmatch(line)[1]
+			v, ok := symbols[sym]
+			if !ok {
+				panic(fmt.Sprintf("unknown symbol: %s", sym))
+			}
+			code = append(code, v)
 		}
 	}
 	return code

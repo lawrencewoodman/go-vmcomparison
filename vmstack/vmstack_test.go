@@ -22,6 +22,7 @@ var tests = []struct {
 	{"loopuntil_v2.asm", map[uint]uint{8: 5000}},
 	{"switch_v1.asm", map[uint]uint{44: 2255}},
 	{"switch_v2.asm", map[uint]uint{44: 2255}},
+	{"switch_v3.asm", map[uint]uint{51: 2255}},
 }
 
 func TestRun(t *testing.T) {
