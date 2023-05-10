@@ -1,14 +1,25 @@
             ; Version 2
-            ; Using JMP DI
             ; SWITCH
+            ; Using table
+
             MOV     l8 cnt
-loop:       MOV     cnt caseOff
-            SHL     l2 caseOff
-            ; We use switch-4 so we don't have to dec cnt
-            ; JMP DI  switch-4 caseOff
-            JMP DI  8 caseOff
+loop:       MOV     switchTable tableLoc
+            ADD     cnt tableLoc
+            MOV I   tableLoc caseLoc
+            JMP I   caseLoc 0
 decCnt:     DJNZ    cnt loop
             HLT     ok 0
+
+switchTable: 14    ; TODO: Allow switchTable or similar here
+case0
+case1
+case2
+case3
+case4
+case5
+case6
+case7
+
 
 switch:
 case0:      ADD     l11 lac
@@ -49,4 +60,5 @@ l123:   123
 l367:   367
 l592:   592
 l1001:  1001
-caseOff: 0
+tableLoc: 0
+caseLoc: 0

@@ -1,11 +1,13 @@
             ; Version 1
             ; SWITCH
+            ; Using JMP DI
+
             MOV     l8 cnt
 loop:       MOV     cnt caseOff
             SHL     l2 caseOff
-            MOV     switchBase caseLoc
-            ADD     caseOff caseLoc
-            JMP I   caseLoc 0
+            ; We use switch-4 so we don't have to dec cnt
+            ; JMP DI  switch-4 caseOff
+            JMP DI  8 caseOff
 decCnt:     DJNZ    cnt loop
             HLT     ok 0
 
@@ -34,11 +36,7 @@ case6:      ADD     l592 lac
 case7:      ADD     l1001 lac
             JMP     decCnt 0
 
-; TODO: Implement simple maths
-;switchBase: switch-4  ; -4 so we don't have to DEC cnt
-switchBase: 12  ; -4 so we don't have to DEC cnt
-caseOff: 0
-caseLoc: 0
+
 lac:     3
 ok:      0
 cnt:     0
@@ -52,3 +50,4 @@ l123:   123
 l367:   367
 l592:   592
 l1001:  1001
+caseOff: 0

@@ -102,7 +102,7 @@ func (v *VM2) getMemValue(addr uint) (uint, error) {
 // execute executes the supplied instruction
 // Returns: hlt, error
 func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
-	// fmt.Printf("PC: %d, opcode: %d (%d), A: %d, B: %d\n", v.pc, opcode, (opcode&0x3F000000)>>24, operandA, operandB)
+	//fmt.Printf("PC: %d, opcode: %d (%d), A: %d, B: %d\n", v.pc, opcode, (opcode&0x3F000000)>>24, operandA, operandB)
 	switch opcode {
 	case 0 << 24: // HLT
 		v.hltVal = v.mem[operandA]
