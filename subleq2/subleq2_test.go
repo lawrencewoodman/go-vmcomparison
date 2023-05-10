@@ -12,16 +12,11 @@ var tests = []struct {
 	want     map[int]int // [memloc]value
 }{
 	{"loopuntil_v1.asm", map[int]int{14: 5000}},
-	{"add12_v1.asm", map[int]int{98: 4}},
-	{"add12_v2.asm", map[int]int{98: 4}},
-	{"add12_v3.asm", map[int]int{29: 4}},
+	{"add12_v1.asm", map[int]int{29: 4}},
 	{"and_v1.asm", map[int]int{75: 4499}},
 	{"isz_v1.asm", map[int]int{75: 9, 76: 24}},
 	{"jsr_v1.asm", map[int]int{22: 50}},
-	{"tad_v1.asm", map[int]int{129: 32, 138: 32}},
-	{"tad_v2.asm", map[int]int{129: 32, 138: 32}},
-	{"tad_v3.asm", map[int]int{51: 32, 53: 32}},
-	{"tad_v4.asm", map[int]int{44: 32}},
+	{"tad_v1.asm", map[int]int{44: 32}},
 	{"switch_v1.asm", map[int]int{139: 2255}},
 	{"switch_v2.asm", map[int]int{95: 2255}},
 }
