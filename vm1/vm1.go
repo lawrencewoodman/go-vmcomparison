@@ -123,7 +123,6 @@ func (s *VM1) execute(opcode, addr uint) (bool, error) {
 		s.mem[addr] = s.ac
 		s.pc++
 	case 3 << 24: // ADD
-		//fmt.Printf("PC: %d  ADD addr: %d\n", s.pc, addr)
 		s.ac = mask32(s.ac + s.mem[addr])
 		s.pc++
 	case 4 << 24: // SUB
@@ -160,7 +159,6 @@ func (s *VM1) execute(opcode, addr uint) (bool, error) {
 		s.y = s.mem[addr]
 		s.pc++
 	case 18 << 24: // DYJNZ
-		//		fmt.Printf("PC: %d  DYJNZ  AC: %d, Y: %d\n", s.pc, s.ac, s.y)
 		s.y = mask32(s.y - 1)
 		if s.y != 0 {
 			s.pc = addr
@@ -168,7 +166,6 @@ func (s *VM1) execute(opcode, addr uint) (bool, error) {
 			s.pc++
 		}
 	case 20 << 24: // JSR - Jump to address, store return address in RET
-		//		fmt.Printf("PC: %d  JSR  AC: %d, Y: %d\n", s.pc, s.ac, s.y)
 		s.r = mask32(s.pc + 1)
 		s.pc = addr
 	case 21 << 24: // RET - Jump to address in R

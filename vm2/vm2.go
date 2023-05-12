@@ -127,7 +127,6 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 	case 5 << 24: // JMP
 		v.pc = operandA + operandB
 	case 6 << 24: // LIT
-		//fmt.Printf("PC: %d  LIT  A: %d, B: %d\n", v.pc, operandA, operandB)
 		v.mem[operandB] = operandA
 		v.pc += 2
 	case 7 << 24: // AND

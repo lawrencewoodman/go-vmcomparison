@@ -59,8 +59,6 @@ func (v *VMStack) Step() (bool, error) {
 	if operand > 0 {
 		v.dstack.push(operand)
 	}
-	//	fmt.Printf("PC: %d, opcode: %d (%d)\n", v.pc, opcode, opcode>>24)
-	// TODO: do something with operand for LIT, STORE, FETCH, ADD?
 	switch opcode {
 	case 0 << 24: // HLT
 		v.hltVal = v.dstack.pop()
@@ -79,14 +77,12 @@ func (v *VMStack) Step() (bool, error) {
 		}
 
 		v.mem[addr] = v.dstack.pop()
-		//		fmt.Printf("PC: %d  STORE n:%d addr:%d\n", v.pc, v.mem[addr], addr)
 		v.pc++
 	case 3 << 24: // ADD
 		a := v.dstack.pop()
 		b := v.dstack.peek()
 		c := mask32(a + b)
 		v.dstack.replace(c)
-		//fmt.Printf("PC: %d  ADD %d + %d = %d\n", v.pc, a, b, c)
 		v.pc++
 	case 4 << 24: // SUB
 		v.dstack.replace(mask32(v.dstack.pop() - v.dstack.peek()))
@@ -129,7 +125,6 @@ func (v *VMStack) Step() (bool, error) {
 		v.pc++
 	case 18 << 24: // DROP - (n --)
 		v.dstack.pop()
-		//fmt.Printf("PC: %d  DROP %d\n", v.pc, a)
 		v.pc++
 	case 19 << 24: // SWAP - (a b -- b a)
 		b := v.dstack.pop()
@@ -150,7 +145,6 @@ func (v *VMStack) Step() (bool, error) {
 			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		val := mask32(v.mem[addr] + v.dstack.peek())
-		//		fmt.Printf("PC: %d  ADDBI addr: %d, newVal: %d\n", v.pc, addr, val)
 		v.dstack.replace(val)
 		v.pc++
 	case 27 << 24: // FETCHI
