@@ -26,7 +26,7 @@ andit:          ; Store the AND mask
                 andMask andMask
                 tmp z
                 z andMask
-                z z
+                ; z z  not needed because of z z and13 below
 
                 ; Store the return location
                 and13ret and13ret
@@ -45,8 +45,7 @@ lmandit: 0-andit
 
 cnt:      0
 memLoc:   0
-mtmp:     0-tmp
-mmemBase: 0-64   ; TODO: be able to put memBase or similar here
+mmemBase: 0-60   ; TODO: be able to put memBase or similar here
 mopAddr:  0-4
 lac:      4503
 tmp:      0
