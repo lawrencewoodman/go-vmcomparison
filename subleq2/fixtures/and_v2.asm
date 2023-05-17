@@ -1,4 +1,4 @@
-                ; Version 1
+                ; Version 2
                 ; PDP-8 AND
                 ; Uses check for high 13-bit rather than OR
 
