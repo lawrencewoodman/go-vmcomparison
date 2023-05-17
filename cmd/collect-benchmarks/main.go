@@ -19,10 +19,12 @@ import (
 )
 
 type stat struct {
-	pkg  string
-	name string
-	ns   int64
-	size int64
+	pkg       string
+	name      string
+	stubName  string
+	ns        int64
+	diffRatio float64
+	size      int64
 }
 
 func usage(errMsg string) {
@@ -89,7 +91,7 @@ func parse(lines []string) []stat {
 			if err != nil {
 				panic(err)
 			}
-			stats = append(stats, stat{pkg, testName, ns, size})
+			stats = append(stats, stat{pkg: pkg, name: testName, stubName: getStubName(testName), ns: ns, size: size})
 		}
 	}
 	return stats
@@ -108,26 +110,47 @@ func printCSV(stats []stat) {
 func printTables(stats []stat) {
 	currentStubName := ""
 	for _, s := range stats {
-		stubName := getStubName(s.name)
-		if stubName != currentStubName {
+		if s.stubName != currentStubName {
 			// Print a title
-			fmt.Printf("\n%s\n%s\n", stubName, strings.Repeat("=", len(stubName)))
-			currentStubName = stubName
+			fmt.Printf("\n%s\n%s\n", s.stubName, strings.Repeat("=", len(s.stubName)))
+			currentStubName = s.stubName
 		}
 		if s.size > 0 {
-			fmt.Printf("%-8s %-17s %9d ns  %3d words\n", s.pkg, s.name, s.ns, s.size)
+			fmt.Printf("%-8s %-17s %6.3f  %5d words\n", s.pkg, s.name, s.diffRatio, s.size)
 		} else {
-			fmt.Printf("%-8s %-17s %9d ns\n", s.pkg, s.name, s.ns)
+			if s.pkg == "native" {
+				fmt.Printf("%-8s %-17s %6.3f  %5d ns\n", s.pkg, s.name, s.diffRatio, s.ns)
+			} else {
+				fmt.Printf("%-8s %-17s %6.3f\n", s.pkg, s.name, s.diffRatio)
+			}
 		}
 	}
 }
 
 func groupSort(stats []stat) []stat {
 	sort.SliceStable(stats, func(i, j int) bool {
-		nameI := getStubName(stats[i].name)
-		nameJ := getStubName(stats[j].name)
-		return nameI < nameJ
+		nameI := stats[i].stubName
+		nameJ := stats[j].stubName
+		diffI := stats[i].diffRatio
+		diffJ := stats[j].diffRatio
+		if nameI != nameJ {
+			return nameI < nameJ
+		}
+		return diffI < diffJ
 	})
+	return stats
+}
+
+func calcDiff(stats []stat) []stat {
+	for i, s := range stats {
+		for _, si := range stats {
+			if s.pkg == "native" {
+				stats[i].diffRatio = 1
+			} else if s.stubName == si.stubName && si.pkg == "native" {
+				stats[i].diffRatio = float64(s.ns) / float64(si.ns)
+			}
+		}
+	}
 	return stats
 }
 
@@ -159,6 +182,7 @@ func main() {
 		os.Exit(1)
 	}
 	stats := parse(lines)
+	stats = calcDiff(stats)
 	stats = groupSort(stats)
 	switch command {
 	case "csv":
