@@ -55,7 +55,6 @@ func (v *VM2) LoadRoutine(routine []uint) {
 // Returns: opcode, operandA, operandB
 // TODO: describe instruction format
 func (v *VM2) fetch() (uint, uint, uint, error) {
-	var err error
 	if v.pc+1 >= memSize {
 		return 0, 0, 0, fmt.Errorf("outside memory range: %d", v.pc+1)
 	}
@@ -66,18 +65,25 @@ func (v *VM2) fetch() (uint, uint, uint, error) {
 
 	// If addressing mode: operand A indirect
 	if ir&0x80000000 == 0x80000000 {
-		operandA, err = v.getMemValue(operandA)
-		if err != nil {
-			return 0, 0, 0, err
+		if operandA >= memSize {
+			return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandA)
 		}
+		operandA = v.mem[operandA]
 	}
 
 	// If addressing mode: operand B indirect
 	if ir&0x40000000 == 0x40000000 {
-		operandB, err = v.getMemValue(operandB)
-		if err != nil {
-			return 0, 0, 0, err
+		if operandB >= memSize {
+			return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandB)
 		}
+		operandB = v.mem[operandB]
+	}
+
+	if operandA >= memSize {
+		return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandA)
+	}
+	if operandB >= memSize {
+		return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandB)
 	}
 
 	// TODO: Decide if should increment PC here
@@ -86,14 +92,6 @@ func (v *VM2) fetch() (uint, uint, uint, error) {
 
 func mask32(n uint) uint {
 	return n & 0xFFFFFFFF
-}
-
-func (v *VM2) getMemValue(addr uint) (uint, error) {
-	addr = v.mem[addr]
-	if addr >= memSize {
-		return addr, fmt.Errorf("outside memory range: %d", addr)
-	}
-	return addr, nil
 }
 
 // execute executes the supplied instruction
@@ -123,9 +121,6 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 		}
 	case 5 << 24: // JMP
 		v.pc = operandA + operandB
-	case 6 << 24: // LIT
-		v.mem[operandB] = operandA
-		v.pc += 2
 	case 7 << 24: // AND
 		v.mem[operandB] = v.mem[operandA] & v.mem[operandB]
 		v.pc += 2

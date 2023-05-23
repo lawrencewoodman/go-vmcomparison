@@ -23,7 +23,6 @@ var instructions = map[string]uint{
 	"ADD":  3 << 24,
 	"DJNZ": 4 << 24,
 	"JMP":  5 << 24,
-	"LIT":  6 << 24,
 	"AND":  7 << 24,
 	"OR":   8 << 24,
 	"SHL":  9 << 24,
