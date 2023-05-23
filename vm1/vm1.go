@@ -63,7 +63,6 @@ func mask32(n uint) uint {
 // Returns: opcode, addr
 // TODO: describe instruction format
 func (s *VM1) fetch() (uint, uint, error) {
-	var err error
 	if s.pc >= memSize {
 		return 0, 0, fmt.Errorf("outside memory range: %d", s.pc)
 	}
@@ -73,10 +72,7 @@ func (s *VM1) fetch() (uint, uint, error) {
 
 	baseIndex := ir & 0x40000000
 	if baseIndex != 0 {
-		addr, err = s.calcIIAddr(addr)
-		if err != nil {
-			return 0, 0, err
-		}
+		addr = s.calcIIAddr(addr)
 	} else {
 		indirect := ir & 0x80000000
 		if indirect != 0 {
@@ -94,17 +90,13 @@ func (s *VM1) fetch() (uint, uint, error) {
 }
 
 // TODO: Rename II to BI or similar
-func (s *VM1) calcIIAddr(addr uint) (uint, error) {
+func (s *VM1) calcIIAddr(addr uint) uint {
 	baseIndirect := addr >> 12
 	indexIndirect := addr & 0xFFF
 	// TODO: Assume always at least 4096 memory to avoid check
 	base := s.mem[baseIndirect]
 	index := s.mem[indexIndirect]
-	addr = base + index
-	if addr >= memSize {
-		return 0, fmt.Errorf("outside memory range: %d", addr)
-	}
-	return addr, nil
+	return base + index
 }
 
 // execute executes the supplied instruction
