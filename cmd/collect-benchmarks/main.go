@@ -19,12 +19,12 @@ import (
 )
 
 type stat struct {
-	pkg       string
-	name      string
-	stubName  string
-	ns        int64
-	diffRatio float64
-	size      int64
+	pkg        string
+	name       string
+	stubName   string
+	ns         int64
+	speedRatio float64
+	size       int64
 }
 
 func usage(errMsg string) {
@@ -112,18 +112,18 @@ func printTables(stats []stat) {
 	for _, s := range stats {
 		if s.stubName != currentStubName {
 			// Print a title
-			fmt.Printf("\n%s\n%s\n", s.stubName, strings.Repeat("=", len(s.stubName)))
+			fmt.Printf("\nTest: %s\n%s\n\n", s.stubName, strings.Repeat("=", len(s.stubName)+6))
 			currentStubName = s.stubName
+			fmt.Printf("   Pkg        Test Name       Speed Ratio   Code Words   Speed (ns)\n")
+			fmt.Printf("---------|------------------|-------------|------------|------------\n")
 		}
+		fmt.Printf("%-9s  %-17s       %6.3f        ", s.pkg, s.name, s.speedRatio)
 		if s.size > 0 {
-			fmt.Printf("%-8s %-17s %6.3f  %5d words\n", s.pkg, s.name, s.diffRatio, s.size)
+			fmt.Printf("%5d", s.size)
 		} else {
-			if s.pkg == "native" {
-				fmt.Printf("%-8s %-17s %6.3f  %5d ns\n", s.pkg, s.name, s.diffRatio, s.ns)
-			} else {
-				fmt.Printf("%-8s %-17s %6.3f\n", s.pkg, s.name, s.diffRatio)
-			}
+			fmt.Printf("     ")
 		}
+		fmt.Printf("       %6d\n", s.ns)
 	}
 }
 
@@ -131,8 +131,8 @@ func groupSort(stats []stat) []stat {
 	sort.SliceStable(stats, func(i, j int) bool {
 		nameI := stats[i].stubName
 		nameJ := stats[j].stubName
-		diffI := stats[i].diffRatio
-		diffJ := stats[j].diffRatio
+		diffI := stats[i].speedRatio
+		diffJ := stats[j].speedRatio
 		if nameI != nameJ {
 			return nameI < nameJ
 		}
@@ -145,9 +145,9 @@ func calcDiff(stats []stat) []stat {
 	for i, s := range stats {
 		for _, si := range stats {
 			if s.pkg == "native" {
-				stats[i].diffRatio = 1
+				stats[i].speedRatio = 1
 			} else if s.stubName == si.stubName && si.pkg == "native" {
-				stats[i].diffRatio = float64(s.ns) / float64(si.ns)
+				stats[i].speedRatio = float64(s.ns) / float64(si.ns)
 			}
 		}
 	}
