@@ -100,7 +100,6 @@ func (s *VM1) calcIIAddr(addr uint) (uint, error) {
 	// TODO: Assume always at least 4096 memory to avoid check
 	base := s.mem[baseIndirect]
 	index := s.mem[indexIndirect]
-	// fmt.Printf("II baseIndirect: %d, indexIndirect: %d, base: %d, index: %d\n", baseIndirect, indexIndirect, base, index)
 	addr = base + index
 	if addr >= memSize {
 		return 0, fmt.Errorf("outside memory range: %d", addr)

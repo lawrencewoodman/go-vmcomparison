@@ -73,7 +73,6 @@ func pass1(srcLines []string) map[string]uint {
 	var pos uint = 0
 	symbols := make(map[string]uint, 0)
 	for _, line := range srcLines {
-		//fmt.Printf("%s\n", line)
 		// If there is a label
 		if reLabel.MatchString(line) {
 			label := reLabel.FindStringSubmatch(line)[1]
@@ -167,7 +166,6 @@ func resolveOperand(symbols map[string]uint, operand string) uint {
 		if err != nil {
 			panic(err)
 		}
-		//		fmt.Printf("lit: %d\n", ui64)
 		return uint(ui64)
 		// If operand is an indexed address
 	} else if reIndexOperand.MatchString(operand) {
@@ -190,7 +188,6 @@ func asmInstr(symbols map[string]uint, instr string, addrMode string, operand st
 	if !ok {
 		panic(fmt.Sprintf("unknown instruction: %s", instr))
 	}
-	//fmt.Printf("code from instr: %d\n", code)
 	if addrMode == "I" {
 		code |= 0x80 << 24
 	}
@@ -199,11 +196,7 @@ func asmInstr(symbols map[string]uint, instr string, addrMode string, operand st
 		code |= 0x40 << 24
 	}
 
-	//fmt.Printf("code with addrMode: %d\n", code)
-	//fmt.Printf("asmInstr - instr: %s, addrMod: %s, operand: %s (%d)\n", instr, addrMode, operand, symbols[operand])
-
 	code += resolveOperand(symbols, operand)
-	//fmt.Printf("code: %d\n", code)
 	return code
 }
 
@@ -212,7 +205,6 @@ func asm(filename string) ([]uint, error) {
 	if err != nil {
 		return []uint{}, err
 	}
-	//fmt.Printf("before pass1\n")
 	symbols := pass1(srcLines)
 	/*
 		fmt.Printf("Symbols\n=======\n")

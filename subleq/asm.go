@@ -51,7 +51,6 @@ func pass1(srcLines []string) map[string]int {
 	pos := 0
 	symbols := make(map[string]int, 0)
 	for _, line := range srcLines {
-		//		fmt.Printf("%s\n", line)
 		// If there is a label
 		if reLabel.MatchString(line) {
 			label := reLabel.FindStringSubmatch(line)[1]
@@ -83,7 +82,6 @@ func pass2(srcLines []string, symbols map[string]int) []int {
 	code := make([]int, 0)
 	for _, line := range srcLines {
 		lineNum++
-		//		fmt.Printf("pass2 line: %s\n", line)
 		// If there is a label
 		if reLabel.MatchString(line) {
 			// Remove from line
@@ -186,7 +184,6 @@ func asmInstr(symbols map[string]int, operandA string, operandB string, operandC
 		resolveOperand(symbols, operandB),
 		resolveOperand(symbols, operandC),
 	}
-	//	fmt.Printf("code: %v\n", code)
 	return code
 }
 

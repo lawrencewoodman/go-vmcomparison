@@ -10,8 +10,6 @@ package vm2
 
 import "fmt"
 
-// TODO: video about refining instruction set benchmarks and testing
-
 // TODO: Make this configurable
 const memSize = 32000
 
@@ -62,7 +60,6 @@ func (v *VM2) fetch() (uint, uint, uint, error) {
 		return 0, 0, 0, fmt.Errorf("outside memory range: %d", v.pc+1)
 	}
 	ir := v.mem[v.pc]
-	// fmt.Printf("fetch PC: %d, ir: %d\n", v.pc, ir)
 	opcode := (ir & 0x3F000000)
 	operandA := (ir & 0xFFFFFF)
 	operandB := v.mem[v.pc+1]

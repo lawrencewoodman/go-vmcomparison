@@ -59,10 +59,7 @@ func (v *SUBLEQ) LoadRoutine(routine []int, symbols map[string]int) {
 }
 
 // fetch gets the next instruction from memory
-// Returns: A, B, C
-// NOTE: this routine doesn't use mask32
-// NOTE: this causes a problem with debugging line as it won't be
-// NOTE: obvious which operands are using indirect addressing
+// Returns: A, B, C, error
 func (v *SUBLEQ) fetch() (int, int, int, error) {
 	if v.pc+2 >= memSize {
 		return 0, 0, 0, fmt.Errorf("outside memory range: %d", v.pc)

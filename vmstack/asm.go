@@ -73,7 +73,6 @@ func pass1(srcLines []string) map[string]uint {
 	var pos uint = 0
 	symbols := make(map[string]uint, 0)
 	for _, line := range srcLines {
-		//		fmt.Printf("pos: %2d, line: %s\n", pos, line)
 		// If there is a label
 		if reLabel.MatchString(line) {
 			label := reLabel.FindStringSubmatch(line)[1]
@@ -159,9 +158,7 @@ func resolveOperand(symbols map[string]uint, operand string) uint {
 		if err != nil {
 			panic(err)
 		}
-		//		fmt.Printf("lit: %d\n", ui64)
 		return uint(ui64)
-		// If operand is an indexed address
 	}
 	v, ok := symbols[operand]
 	if !ok {
@@ -175,10 +172,8 @@ func asmInstr(symbols map[string]uint, instr string, operand string) uint {
 	if !ok {
 		panic(fmt.Sprintf("unknown instruction: %s", instr))
 	}
-	//	fmt.Printf("asmInstr - opcode: %d, operand: %s\n", opcode, operand)
 
 	code := opcode + resolveOperand(symbols, operand)
-	//	fmt.Printf("code: %v\n", code)
 	return code
 }
 
