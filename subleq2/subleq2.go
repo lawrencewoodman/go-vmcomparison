@@ -58,9 +58,31 @@ func (v *SUBLEQ) LoadRoutine(routine []int, symbols map[string]int) {
 	v.symbols = symbols
 }
 
+// getOperand returns the operand as supplied unless it is negative in which
+// case it returns the value at the location in memory pointed to by the
+// operand
+func (v *SUBLEQ) getOperand(operand int) (int, error) {
+	if operand < 0 {
+		operand = 0 - operand
+		if operand >= memSize {
+			return 0, fmt.Errorf("outside memory range: %d", operand)
+		}
+		operand = v.mem[operand]
+		if operand < 0 {
+			return 0, fmt.Errorf("double indirect not supported")
+		}
+		if operand >= memSize {
+			return 0, fmt.Errorf("outside memory range: %d", operand)
+		}
+	}
+	return operand, nil
+}
+
 // fetch gets the next instruction from memory
 // Returns: A, B, C, error
 func (v *SUBLEQ) fetch() (int, int, int, error) {
+	var err error
+
 	if v.pc+2 >= memSize {
 		return 0, 0, 0, fmt.Errorf("outside memory range: %d", v.pc)
 	}
@@ -68,34 +90,17 @@ func (v *SUBLEQ) fetch() (int, int, int, error) {
 	operandB := v.mem[v.pc+1]
 	operandC := v.mem[v.pc+2]
 
-	if operandA < 0 {
-		operandA = 0 - operandA
-		if operandA >= memSize {
-			return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandA)
-		}
-		operandA = v.mem[operandA]
-	} else if operandA >= memSize {
-		return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandA)
+	operandA, err = v.getOperand(operandA)
+	if err != nil {
+		return 0, 0, 0, err
 	}
-
-	if operandB < 0 {
-		operandB = 0 - operandB
-		if operandB >= memSize {
-			return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandB)
-		}
-		operandB = v.mem[operandB]
-	} else if operandB >= memSize {
-		return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandB)
+	operandB, err = v.getOperand(operandB)
+	if err != nil {
+		return 0, 0, 0, err
 	}
-
-	if operandC < 0 {
-		operandC = 0 - operandC
-		if operandC >= memSize {
-			return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandC)
-		}
-		operandC = v.mem[operandC]
-	} else if operandC >= memSize {
-		return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandC)
+	operandC, err = v.getOperand(operandC)
+	if err != nil {
+		return 0, 0, 0, err
 	}
 
 	return operandA, operandB, operandC, nil
