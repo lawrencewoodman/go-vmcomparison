@@ -64,13 +64,13 @@ func (v *SUBLEQ) fetch() (int, int, int, error) {
 	operandB := v.mem[v.pc+1]
 	operandC := v.mem[v.pc+2]
 
-	if operandA >= memSize {
+	if operandA < 0 || operandA >= memSize {
 		return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandA)
 	}
-	if operandB >= memSize {
+	if operandB < 0 || operandB >= memSize {
 		return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandB)
 	}
-	if operandC >= memSize {
+	if operandC < 0 || operandC >= memSize {
 		return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandC)
 	}
 
