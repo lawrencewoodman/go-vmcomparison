@@ -8,15 +8,18 @@
 
 package vm2
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // TODO: Make this configurable
 const memSize = 32000
 
 type VM2 struct {
-	mem    [memSize]uint // Memory
-	pc     uint          // Program Counter
-	hltVal uint          // A value returned by HLT
+	mem     [memSize]uint   // Memory
+	pc      uint            // Program Counter
+	hltVal  uint            // A value returned by HLT
+	symbols map[string]uint // The symbols table from the assembler - to aid debugging
 }
 
 func New() *VM2 {
@@ -47,8 +50,9 @@ func (v *VM2) Mem() [memSize]uint {
 	return v.mem
 }
 
-func (v *VM2) LoadRoutine(routine []uint) {
+func (v *VM2) LoadRoutine(routine []uint, symbols map[string]uint) {
 	copy(v.mem[:], routine)
+	v.symbols = symbols
 }
 
 // fetch gets the next instruction from memory
@@ -94,10 +98,30 @@ func mask32(n uint) uint {
 	return n & 0xFFFFFFFF
 }
 
+func (v *VM2) addr2symbol(addr uint) string {
+	for k, v := range v.symbols {
+		if v == addr {
+			return k
+		}
+	}
+	return fmt.Sprintf("%d", addr)
+}
+
+func (v *VM2) opcode2mnemonic(opcode uint) string {
+	for m, o := range instructions {
+		if o == opcode&0x3F000000 {
+			return m
+		}
+	}
+	panic("opcode not found")
+}
+
 // execute executes the supplied instruction
 // Returns: hlt, error
 func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
-	//fmt.Printf("PC: %d, opcode: %d (%d), A: %d, B: %d\n", v.pc, opcode, (opcode&0x3F000000)>>24, operandA, operandB)
+	//	fmt.Printf("%7s:    %s   %s, %s\n", v.addr2symbol(v.pc), v.opcode2mnemonic(opcode), v.addr2symbol(operandA), v.addr2symbol(operandB))
+	//	fmt.Printf("            pre:  [%s]: %d, [%s]: %d\n", v.addr2symbol(operandA), v.mem[operandA], v.addr2symbol(operandB), v.mem[operandB])
+
 	switch opcode {
 	case 0 << 24: // HLT
 		v.hltVal = v.mem[operandA]
@@ -136,8 +160,26 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 		} else {
 			v.pc += 2
 		}
+	case 11 << 24: // SNE
+		if v.mem[operandA] != v.mem[operandB] {
+			v.pc += 4
+		} else {
+			v.pc += 2
+		}
+	case 12 << 24: // SLE
+		if v.mem[operandA] <= v.mem[operandB] {
+			v.pc += 4
+		} else {
+			v.pc += 2
+		}
+	case 13 << 24: // SUB
+		v.mem[operandB] = mask32(v.mem[operandB] - v.mem[operandA])
+		v.pc += 2
+
 	default:
 		return false, fmt.Errorf("unknown opcode: %d (%d)", opcode, (opcode&0x3f000000)>>24)
 	}
+
+	//	fmt.Printf("            post:  [%s]: %d, [%s]: %d\n", v.addr2symbol(operandA), v.mem[operandA], v.addr2symbol(operandB), v.mem[operandB])
 	return false, nil
 }

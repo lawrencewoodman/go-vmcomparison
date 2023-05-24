@@ -16,6 +16,7 @@ var tests = []struct {
 	{"isz_v1.asm", map[uint]uint{22: 24, 20: 9}},
 	{"jsr_v1.asm", map[uint]uint{6: 50}},
 	{"loopuntil_v1.asm", map[uint]uint{8: 5000}},
+	{"subleq_v1.asm", map[uint]uint{80: 5000}},
 	{"switch_v1.asm", map[uint]uint{44: 2255}},
 	{"switch_v2.asm", map[uint]uint{55: 2255}},
 }
@@ -23,12 +24,12 @@ var tests = []struct {
 func TestRun(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.filename, func(t *testing.T) {
-			routine, err := asm(filepath.Join("fixtures", test.filename))
+			routine, symbols, err := asm(filepath.Join("fixtures", test.filename))
 			if err != nil {
 				t.Fatalf("asm() err: %v", err)
 			}
 			v := New()
-			v.LoadRoutine(routine)
+			v.LoadRoutine(routine, symbols)
 			_, err = v.Run()
 			if err != nil {
 				t.Fatalf("Run() err: %v", err)
@@ -44,7 +45,7 @@ func TestRun(t *testing.T) {
 
 func BenchmarkRun(b *testing.B) {
 	for _, test := range tests {
-		routine, err := asm(filepath.Join("fixtures", test.filename))
+		routine, symbols, err := asm(filepath.Join("fixtures", test.filename))
 		if err != nil {
 			b.Fatalf("asm() err: %v", err)
 		}
@@ -53,7 +54,7 @@ func BenchmarkRun(b *testing.B) {
 
 			for n := 0; n < b.N; n++ {
 				v := New()
-				v.LoadRoutine(routine)
+				v.LoadRoutine(routine, symbols)
 
 				b.StartTimer()
 				_, err = v.Run()
