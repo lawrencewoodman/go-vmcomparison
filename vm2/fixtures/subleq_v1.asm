@@ -16,7 +16,6 @@ exec:   MOV     memBase memA
         MOV     memBase memB
         ADD     opB memB
         SUB II  memA memB
-        AND DI  mask32 memB
 
         ; If opB == 1000 THEN halt
         SNE     opB l1000
@@ -52,7 +51,6 @@ opA:     0
 opB:     0
 opC:     0
 ok:      0
-mask32:  4294967295      ; 0xFFFFFFFF
 maxint32: 2147483647     ; The maximum signed 32-bit value, anything greater indicates a negative number
 
 ; loopuntil_v1 from subleq/fixtures/
