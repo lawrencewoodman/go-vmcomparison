@@ -65,14 +65,14 @@ func (v *SUBLEQ) getOperand(operand int) (int, error) {
 	if operand < 0 {
 		operand = 0 - operand
 		if operand >= memSize {
-			return 0, fmt.Errorf("outside memory range: %d", operand)
+			return 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operand)
 		}
 		operand = v.mem[operand]
 		if operand < 0 {
-			return 0, fmt.Errorf("double indirect not supported")
+			return 0, fmt.Errorf("PC: %d, double indirect not supported", v.pc)
 		}
 		if operand >= memSize {
-			return 0, fmt.Errorf("outside memory range: %d", operand)
+			return 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operand)
 		}
 	}
 	return operand, nil
@@ -84,7 +84,7 @@ func (v *SUBLEQ) fetch() (int, int, int, error) {
 	var err error
 
 	if v.pc+2 >= memSize {
-		return 0, 0, 0, fmt.Errorf("outside memory range: %d", v.pc)
+		return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, v.pc)
 	}
 	operandA := v.mem[v.pc]
 	operandB := v.mem[v.pc+1]
