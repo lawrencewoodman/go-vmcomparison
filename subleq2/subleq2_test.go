@@ -18,7 +18,7 @@ var tests = []struct {
 	{"isz_v1.asm", map[int]int{75: 9, 76: 24}},
 	{"jsr_v1.asm", map[int]int{22: 50}},
 	{"tad_v1.asm", map[int]int{44: 32}},
-	{"subleq_v1.asm", map[int]int{177: 5000}},
+	{"subleq_v1.asm", map[int]int{156: 5000}},
 	{"switch_v1.asm", map[int]int{139: 2255}},
 	{"switch_v2.asm", map[int]int{95: 2255}},
 	{"switch_v3.asm", map[int]int{98: 2255}},
