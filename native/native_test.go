@@ -1,6 +1,7 @@
 package native
 
 import (
+	"math"
 	"testing"
 )
 
@@ -51,6 +52,54 @@ func initTad() ([]uint, func(v *Native)) {
 	action := func(v *Native) {
 		opAddr := 1
 		v.mem[0] = mask13(v.mem[0] + v.mem[opAddr])
+	}
+	return mem, action
+}
+
+func initSubleq() ([]uint, func(v *Native)) {
+	mem := []uint{
+		// loopuntil_v1 from subleq/fixtures/
+		// program
+		15,
+		13,
+		3,
+		16,
+		14,
+		6,
+		16,
+		13,
+		3,
+		16,
+		1000,
+		12,
+		0,
+		0,
+		0, // sum
+		4999,
+		math.MaxUint32, // -1
+	}
+	action := func(v *Native) {
+		var hltVal uint
+		pc := uint(0)
+		for {
+			operandA := v.mem[pc]
+			operandB := v.mem[pc+1]
+			operandC := v.mem[pc+2]
+			v.mem[operandB] = mask32(v.mem[operandB] - v.mem[operandA])
+			// If hlt location
+			if operandB == 1000 {
+				hltVal = v.mem[operandB]
+				break
+			}
+			if v.mem[operandB] == 0 || v.mem[operandB] > math.MaxInt32 {
+				pc = operandC
+			} else {
+				pc += 3
+			}
+		}
+		if hltVal != 1 {
+			panic("htlVal != 1")
+		}
 	}
 	return mem, action
 }
@@ -126,6 +175,7 @@ var tests = []struct {
 	{"isz", initIsz, map[uint]uint{0: 24}, 0},
 	{"jsr", initJsr, map[uint]uint{0: 50}, 0},
 	{"loopuntil", initLoopUntil, map[uint]uint{0: 5000}, 0},
+	{"subleq", initSubleq, map[uint]uint{14: 5000}, 0},
 	{"switch", initSwitch, map[uint]uint{0: 2255}, 0},
 }
 
