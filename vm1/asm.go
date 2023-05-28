@@ -11,6 +11,7 @@ package vm1
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"regexp"
 	"strconv"
@@ -21,6 +22,7 @@ var instructions = map[string]uint{
 	"LDA":   1 << 24,
 	"STA":   2 << 24,
 	"ADD":   3 << 24,
+	"SUB":   4 << 24,
 	"AND":   5 << 24,
 	"INC":   6 << 24,
 	"JNZ":   7 << 24,
@@ -35,6 +37,8 @@ var instructions = map[string]uint{
 	"TAY":   22 << 24,
 	"STY":   23 << 24,
 	"OR":    24 << 24,
+	"JEQ":   25 << 24,
+	"JGT":   26 << 24,
 }
 
 func readFile(filename string) ([]string, error) {
@@ -64,7 +68,7 @@ var reLabel = regexp.MustCompile(`^\s*([a-zA-Z]+[0-9a-zA-Z]*):`)
 var reInstr = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]+)\s+`)
 var reAddrMode = regexp.MustCompile(`^\s*([iI]{1,2})\s+`)
 var reOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z,]+).*`)
-var reLiteral = regexp.MustCompile(`^\s*([0-9]+).*`)
+var reLiteral = regexp.MustCompile(`^\s*([\-]?)([0-9]+).*`)
 var reSymbol = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]*).*`)
 var reIndexOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z]+),([0-9a-zA-z]+).*`)
 
@@ -97,7 +101,7 @@ func pass1(srcLines []string) map[string]uint {
 
 func pass2(srcLines []string, symbols map[string]uint) []uint {
 	code := make([]uint, 0)
-	for _, line := range srcLines {
+	for lineNum, line := range srcLines {
 		// If there is a label
 		if reLabel.MatchString(line) {
 			// Remove from line
@@ -128,11 +132,11 @@ func pass2(srcLines []string, symbols map[string]uint) []uint {
 					operand = addrMode
 				} else {
 					// TODO: replace panic addition to errors
-					panic(fmt.Sprintf("no operand found for instruction: %s", line))
+					panic(fmt.Sprintf("%d: no operand found for instruction: %s", lineNum, line))
 				}
 			}
 			if len(line) > 0 {
-				panic(fmt.Sprintf("remaining line: %s", line))
+				panic(fmt.Sprintf("%d: remaining line: %s", lineNum, line))
 			}
 			code = append(code, asmInstr(symbols, instr, addrMode, operand))
 
@@ -141,17 +145,21 @@ func pass2(srcLines []string, symbols map[string]uint) []uint {
 			sym := reSymbol.FindStringSubmatch(line)[1]
 			v, ok := symbols[sym]
 			if !ok {
-				panic(fmt.Sprintf("unknown symbol: %s", sym))
+				panic(fmt.Sprintf("%d: unknown symbol: %s", lineNum, sym))
 			}
 
 			code = append(code, v)
 
 		} else if reLiteral.MatchString(line) {
 			// If there is a literal value
-			lit := reLiteral.FindStringSubmatch(line)[1]
+			sign := reLiteral.FindStringSubmatch(line)[1]
+			lit := reLiteral.FindStringSubmatch(line)[2]
 			ui64, err := strconv.ParseUint(lit, 10, 64)
 			if err != nil {
 				panic(err)
+			}
+			if sign == "-" {
+				ui64 = math.MaxUint64 - (ui64 - 1)
 			}
 			code = append(code, uint(ui64))
 		}

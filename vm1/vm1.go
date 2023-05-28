@@ -8,7 +8,10 @@
 
 package vm1
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 // TODO: Make this configurable
 const memSize = 32000
@@ -64,7 +67,7 @@ func mask32(n uint) uint {
 // TODO: describe instruction format
 func (s *VM1) fetch() (uint, uint, error) {
 	if s.pc >= memSize {
-		return 0, 0, fmt.Errorf("outside memory range: %d", s.pc)
+		return 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", s.pc, s.pc)
 	}
 	ir := s.mem[s.pc]
 	opcode := (ir & 0x3F000000)
@@ -77,13 +80,13 @@ func (s *VM1) fetch() (uint, uint, error) {
 		indirect := ir & 0x80000000
 		if indirect != 0 {
 			if addr >= memSize {
-				return 0, 0, fmt.Errorf("outside memory range: %d", addr)
+				return 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", s.pc, addr)
 			}
 			addr = s.mem[addr]
 		}
 	}
 	if addr >= memSize {
-		return 0, 0, fmt.Errorf("outside memory range: %d", addr)
+		return 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", s.pc, addr)
 	}
 
 	return opcode, addr, nil
@@ -99,10 +102,19 @@ func (s *VM1) calcIIAddr(addr uint) uint {
 	return base + index
 }
 
+func (v *VM1) opcode2mnemonic(opcode uint) string {
+	for m, o := range instructions {
+		if o == opcode&0x3F000000 {
+			return m
+		}
+	}
+	panic("opcode not found")
+}
+
 // execute executes the supplied instruction
 // Returns: hlt, error
 func (s *VM1) execute(opcode, addr uint) (bool, error) {
-	// fmt.Printf("PC: %d, opcode: %d (%d), addr: %d, AC: %d\n", s.pc, opcode, (opcode&0x3F000000)>>24, addr, s.ac)
+	// fmt.Printf("PC: %3d, instruction: %s, addr: %d, pre AC: %d, ", s.pc, s.opcode2mnemonic(opcode), addr, s.ac)
 	switch opcode {
 	case 0 << 24: // HLT
 		s.hltVal = s.mem[addr]
@@ -126,6 +138,7 @@ func (s *VM1) execute(opcode, addr uint) (bool, error) {
 		s.mem[addr] = mask32(s.mem[addr] + 1)
 		s.pc++
 	case 7 << 24: // JNZ
+		// TODO: Rename to JNE?
 		if s.ac != 0 {
 			s.pc = addr
 		} else {
@@ -173,8 +186,21 @@ func (s *VM1) execute(opcode, addr uint) (bool, error) {
 	case 24 << 24: // OR
 		s.ac |= s.mem[addr]
 		s.pc++
+	case 25 << 24: // JEQ
+		if s.ac == 0 {
+			s.pc = addr
+		} else {
+			s.pc++
+		}
+	case 26 << 24: // JGT
+		if s.ac != 0 && s.ac <= math.MaxInt32 {
+			s.pc = addr
+		} else {
+			s.pc++
+		}
 	default:
 		panic(fmt.Sprintf("unknown opcode: %d (%d)", opcode, (opcode&0x3f000000)>>24))
 	}
+	// fmt.Printf("post AC: %d\n", s.ac)
 	return false, nil
 }
