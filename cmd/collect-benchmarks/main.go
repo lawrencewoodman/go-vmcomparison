@@ -117,13 +117,13 @@ func printTables(stats []stat) {
 			fmt.Printf("   Pkg        Test Name       Speed Ratio   Code Words   Speed (ns)\n")
 			fmt.Printf("---------|------------------|-------------|------------|------------\n")
 		}
-		fmt.Printf("%-9s  %-17s       %6.3f        ", s.pkg, s.name, s.speedRatio)
+		fmt.Printf("%-9s  %-17s      %7.3f        ", s.pkg, s.name, s.speedRatio)
 		if s.size > 0 {
 			fmt.Printf("%5d", s.size)
 		} else {
 			fmt.Printf("     ")
 		}
-		fmt.Printf("       %6d\n", s.ns)
+		fmt.Printf("     %8d\n", s.ns)
 	}
 }
 
