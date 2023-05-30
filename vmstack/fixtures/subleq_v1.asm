@@ -10,7 +10,7 @@ fetch:  FETCH pc
         FETCH
         
         SWAP
-        ADD 1          ; increment pc
+        INC            ; increment pc
         DUP
 
         ; opB
@@ -19,7 +19,7 @@ fetch:  FETCH pc
         FETCH
 
         SWAP
-        ADD 1          ; increment pc
+        INC            ; increment pc
         DUP
 
         ; opC
@@ -28,7 +28,7 @@ fetch:  FETCH pc
         FETCH
 
         SWAP
-        ADD 1          ; increment pc
+        INC            ; increment pc
         STORE pc
 
 
