@@ -9,7 +9,10 @@
  */
 package vmstack
 
-import "fmt"
+import (
+	"fmt"
+	"math"
+)
 
 // TODO: Make this configurable
 const memSize = 32000
@@ -66,14 +69,14 @@ func (v *VMStack) Step() (bool, error) {
 	case 1 << 24: // FETCH
 		addr := v.dstack.peek()
 		if addr >= memSize {
-			return false, fmt.Errorf("outside memory range: %d", addr)
+			return false, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, addr)
 		}
 		v.dstack.replace(v.mem[addr])
 		v.pc++
 	case 2 << 24: // STORE (n addr --)
 		addr := v.dstack.pop()
 		if addr >= memSize {
-			return false, fmt.Errorf("outside memory range: %d", addr)
+			return false, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, addr)
 		}
 
 		v.mem[addr] = v.dstack.pop()
@@ -84,8 +87,10 @@ func (v *VMStack) Step() (bool, error) {
 		c := mask32(a + b)
 		v.dstack.replace(c)
 		v.pc++
-	case 4 << 24: // SUB
-		v.dstack.replace(mask32(v.dstack.pop() - v.dstack.peek()))
+	case 4 << 24: // SUB (a b -- a-b)
+		b := v.dstack.pop()
+		a := v.dstack.peek()
+		v.dstack.replace(mask32(a - b))
 		v.pc++
 	case 5 << 24: // AND
 		v.dstack.replace(v.dstack.pop() & v.dstack.peek())
@@ -170,7 +175,30 @@ func (v *VMStack) Step() (bool, error) {
 	case 31 << 24: // OR
 		v.dstack.replace(v.dstack.pop() | v.dstack.peek())
 		v.pc++
-
+	case 32 << 24: // JZ (val addr --)
+		addr := v.dstack.pop()
+		val := v.dstack.pop()
+		if val == 0 {
+			v.pc = addr
+		} else {
+			v.pc++
+		}
+	case 33 << 24: // JGT (val addr --)
+		addr := v.dstack.pop()
+		val := v.dstack.pop()
+		if val != 0 && val <= math.MaxInt32 {
+			v.pc = addr
+		} else {
+			v.pc++
+		}
+	case 34 << 24: // ROT (a b c -- b c a)
+		c := v.dstack.pop()
+		b := v.dstack.pop()
+		a := v.dstack.peek()
+		v.dstack.replace(b)
+		v.dstack.push(c)
+		v.dstack.push(a)
+		v.pc++
 	}
 	return false, nil
 }

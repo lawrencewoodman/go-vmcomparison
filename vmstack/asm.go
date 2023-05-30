@@ -11,6 +11,7 @@ package vmstack
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
 	"regexp"
 	"strconv"
@@ -21,6 +22,7 @@ var instructions = map[string]uint{
 	"FETCH":   1 << 24,
 	"STORE":   2 << 24,
 	"ADD":     3 << 24,
+	"SUB":     4 << 24,
 	"AND":     5 << 24,
 	"JNZ":     7 << 24,
 	"DJNZ":    11 << 24,
@@ -36,6 +38,9 @@ var instructions = map[string]uint{
 	"RET":     29 << 24,
 	"DUP":     30 << 24,
 	"OR":      31 << 24,
+	"JZ":      32 << 24,
+	"JGT":     33 << 24,
+	"ROT":     34 << 24,
 }
 
 func readFile(filename string) ([]string, error) {
@@ -64,7 +69,7 @@ func readFile(filename string) ([]string, error) {
 var reLabel = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]*):`)
 var reInstr = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]+)\s*`)
 var reOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z]+)\s*`)
-var reLiteral = regexp.MustCompile(`^\s*([0-9]+)\s*`)
+var reLiteral = regexp.MustCompile(`^\s*([\-]?)([0-9]+)\s*`)
 var reSymbol = regexp.MustCompile(`^\s*!([a-zA-Z][0-9a-zA-Z]*).*`)
 var reComment = regexp.MustCompile(`^\s*(;.*)$`)
 
@@ -129,10 +134,14 @@ func pass2(srcLines []string, symbols map[string]uint) []uint {
 			code = append(code, asmInstr(symbols, instr, operand))
 		} else if reLiteral.MatchString(line) {
 			// If there is a literal value
-			lit := reLiteral.FindStringSubmatch(line)[1]
+			sign := reLiteral.FindStringSubmatch(line)[1]
+			lit := reLiteral.FindStringSubmatch(line)[2]
 			ui64, err := strconv.ParseUint(lit, 10, 64)
 			if err != nil {
 				panic(err)
+			}
+			if sign == "-" {
+				ui64 = math.MaxUint64 - (ui64 - 1)
 			}
 			code = append(code, uint(ui64))
 		} else if reSymbol.MatchString(line) {
@@ -190,6 +199,6 @@ func asm(filename string) ([]uint, error) {
 		}
 	*/
 	code := pass2(srcLines, symbols)
-	//fmt.Printf("%v\n", code)
+	//	fmt.Printf("%v\n", code)
 	return code, nil
 }
