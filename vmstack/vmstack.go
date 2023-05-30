@@ -199,6 +199,12 @@ func (v *VMStack) Step() (bool, error) {
 		v.dstack.push(c)
 		v.dstack.push(a)
 		v.pc++
+	case 35 << 24: // OVER (a b -- a b a)
+		b := v.dstack.pop()
+		a := v.dstack.peek()
+		v.dstack.push(b)
+		v.dstack.push(a)
+		v.pc++
 	}
 	return false, nil
 }

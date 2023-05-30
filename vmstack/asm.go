@@ -41,6 +41,7 @@ var instructions = map[string]uint{
 	"JZ":      32 << 24,
 	"JGT":     33 << 24,
 	"ROT":     34 << 24,
+	"OVER":    35 << 24,
 }
 
 func readFile(filename string) ([]string, error) {
@@ -199,6 +200,6 @@ func asm(filename string) ([]uint, error) {
 		}
 	*/
 	code := pass2(srcLines, symbols)
-	//	fmt.Printf("%v\n", code)
+	//fmt.Printf("%v\n", code)
 	return code, nil
 }
