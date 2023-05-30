@@ -10,6 +10,7 @@ package vm2
 
 import (
 	"fmt"
+	"math"
 )
 
 // TODO: Make this configurable
@@ -60,7 +61,7 @@ func (v *VM2) LoadRoutine(routine []uint, symbols map[string]uint) {
 // TODO: describe instruction format
 func (v *VM2) fetch() (uint, uint, uint, error) {
 	if v.pc+1 >= memSize {
-		return 0, 0, 0, fmt.Errorf("outside memory range: %d", v.pc+1)
+		return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, v.pc+1)
 	}
 	ir := v.mem[v.pc]
 	opcode := (ir & 0x3F000000)
@@ -70,7 +71,7 @@ func (v *VM2) fetch() (uint, uint, uint, error) {
 	// If addressing mode: operand A indirect
 	if ir&0x80000000 == 0x80000000 {
 		if operandA >= memSize {
-			return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandA)
+			return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandA)
 		}
 		operandA = v.mem[operandA]
 	}
@@ -78,16 +79,16 @@ func (v *VM2) fetch() (uint, uint, uint, error) {
 	// If addressing mode: operand B indirect
 	if ir&0x40000000 == 0x40000000 {
 		if operandB >= memSize {
-			return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandB)
+			return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandB)
 		}
 		operandB = v.mem[operandB]
 	}
 
 	if operandA >= memSize {
-		return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandA)
+		return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandA)
 	}
 	if operandB >= memSize {
-		return 0, 0, 0, fmt.Errorf("outside memory range: %d", operandB)
+		return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandB)
 	}
 
 	// TODO: Decide if should increment PC here
@@ -175,6 +176,12 @@ func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
 	case 12 << 24: // SUB
 		v.mem[operandB] = mask32(v.mem[operandB] - v.mem[operandA])
 		v.pc += 2
+	case 13 << 24: // JGT
+		if v.mem[operandA] != 0 && v.mem[operandA] <= math.MaxInt32 {
+			v.pc = operandB
+		} else {
+			v.pc += 2
+		}
 
 	default:
 		return false, fmt.Errorf("unknown opcode: %d (%d)", opcode, (opcode&0x3f000000)>>24)
