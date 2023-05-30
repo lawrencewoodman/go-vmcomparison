@@ -144,55 +144,55 @@ func (s *VM1) execute(opcode, addr uint) (bool, error) {
 		} else {
 			s.pc++
 		}
-	case 11 << 24: // DSZ
+	case 8 << 24: // DSZ
 		s.mem[addr] = mask32(s.mem[addr] - 1)
 		if s.mem[addr] == 0 {
 			s.pc += 2
 		} else {
 			s.pc++
 		}
-	case 12 << 24: // JMP
+	case 9 << 24: // JMP
 		s.pc = addr
-	case 13 << 24: // SHL
+	case 10 << 24: // SHL
 		s.mem[addr] = mask32(s.mem[addr] << 1)
 		s.pc++
-	case 15 << 24: // LDX
+	case 11 << 24: // LDX
 		s.x = s.mem[addr]
 		s.pc++
-	case 16 << 24: // LDY
+	case 12 << 24: // LDY
 		s.y = s.mem[addr]
 		s.pc++
-	case 18 << 24: // DYJNZ
+	case 13 << 24: // DYJNZ
 		s.y = mask32(s.y - 1)
 		if s.y != 0 {
 			s.pc = addr
 		} else {
 			s.pc++
 		}
-	case 20 << 24: // JSR - Jump to address, store return address in RET
+	case 14 << 24: // JSR - Jump to address, store return address in RET
 		s.r = mask32(s.pc + 1)
 		s.pc = addr
-	case 21 << 24: // RET - Jump to address in R
+	case 15 << 24: // RET - Jump to address in R
 		// TODO: NOTE: This could also be used to loop on a JSR
 		// TODO: NOTE: because the value won't change in R unless
 		// TODO: NOTE: another RET is called
 		s.pc = s.r
-	case 22 << 24: // TAY - Transfer AC to Y
+	case 16 << 24: // TAY - Transfer AC to Y
 		s.y = s.ac
 		s.pc++
-	case 23 << 24: // STY - Store Y
+	case 17 << 24: // STY - Store Y
 		s.mem[addr] = s.y
 		s.pc++
-	case 24 << 24: // OR
+	case 18 << 24: // OR
 		s.ac |= s.mem[addr]
 		s.pc++
-	case 25 << 24: // JEQ
+	case 19 << 24: // JEQ
 		if s.ac == 0 {
 			s.pc = addr
 		} else {
 			s.pc++
 		}
-	case 26 << 24: // JGT
+	case 20 << 24: // JGT
 		if s.ac != 0 && s.ac <= math.MaxInt32 {
 			s.pc = addr
 		} else {

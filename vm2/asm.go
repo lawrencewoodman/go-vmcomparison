@@ -24,13 +24,13 @@ var instructions = map[string]uint{
 	"ADD":  3 << 24,
 	"DJNZ": 4 << 24,
 	"JMP":  5 << 24,
-	"AND":  7 << 24,
-	"OR":   8 << 24,
-	"SHL":  9 << 24,
-	"JNZ":  10 << 24,
-	"SNE":  11 << 24,
-	"SLE":  12 << 24,
-	"SUB":  13 << 24,
+	"AND":  6 << 24,
+	"OR":   7 << 24,
+	"SHL":  8 << 24,
+	"JNZ":  9 << 24,
+	"SNE":  10 << 24,
+	"SLE":  11 << 24,
+	"SUB":  12 << 24,
 }
 
 func readFile(filename string) ([]string, error) {
