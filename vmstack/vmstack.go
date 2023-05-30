@@ -106,7 +106,7 @@ func (v *VMStack) Step() (bool, error) {
 		} else {
 			v.pc++
 		}
-	case 11 << 24: // DJNZ - (val addr -- val) - Decrement and Jump if not Zero
+	case 8 << 24: // DJNZ - (val addr -- val) - Decrement and Jump if not Zero
 		addr := v.dstack.pop()
 		val := v.dstack.peek()
 		val = mask32(val - 1)
@@ -116,35 +116,35 @@ func (v *VMStack) Step() (bool, error) {
 		} else {
 			v.pc++
 		}
-	case 12 << 24: // JMP
+	case 9 << 24: // JMP
 		v.pc = v.dstack.pop()
-	case 13 << 24: // SHL
+	case 10 << 24: // SHL
 		v.dstack.replace(mask32(v.dstack.peek() << 1))
 		v.pc++
-	case 15 << 24: // LIT - Put the 24-bit operand on the stack
+	case 11 << 24: // LIT - Put the 24-bit operand on the stack
 		if operand == 0 {
 			v.dstack.push(0)
 		}
 		// else operand is pushed to TOS at start
 		// of this function
 		v.pc++
-	case 18 << 24: // DROP - (n --)
+	case 12 << 24: // DROP - (n --)
 		v.dstack.pop()
 		v.pc++
-	case 19 << 24: // SWAP - (a b -- b a)
+	case 13 << 24: // SWAP - (a b -- b a)
 		b := v.dstack.pop()
 		a := v.dstack.peek()
 		v.dstack.replace(b)
 		v.dstack.push(a)
 		v.pc++
-	case 20 << 24: // FETCHBI - (base index -- n)
+	case 14 << 24: // FETCHBI - (base index -- n)
 		addr := v.dstack.pop() + v.dstack.peek()
 		if addr >= memSize {
 			return false, fmt.Errorf("outside memory range: %d", addr)
 		}
 		v.dstack.replace(v.mem[addr])
 		v.pc++
-	case 24 << 24: // ADDBI - (n base index -- n)
+	case 15 << 24: // ADDBI - (n base index -- n)
 		addr := v.dstack.pop() + v.dstack.pop()
 		if addr >= memSize {
 			return false, fmt.Errorf("outside memory range: %d", addr)
@@ -152,7 +152,7 @@ func (v *VMStack) Step() (bool, error) {
 		val := mask32(v.mem[addr] + v.dstack.peek())
 		v.dstack.replace(val)
 		v.pc++
-	case 27 << 24: // FETCHI
+	case 16 << 24: // FETCHI
 		addr := v.dstack.peek()
 		if addr >= memSize {
 			return false, fmt.Errorf("outside memory range: %d", addr)
@@ -163,19 +163,18 @@ func (v *VMStack) Step() (bool, error) {
 		}
 		v.dstack.replace(v.mem[addr])
 		v.pc++
-	case 28 << 24: // JSR
+	case 17 << 24: // JSR
 		v.rstack.push(mask32(v.pc + 1))
 		v.pc = v.dstack.pop()
-	case 29 << 24: // RET
+	case 18 << 24: // RET
 		v.pc = v.rstack.pop()
-
-	case 30 << 24: // DUP
+	case 19 << 24: // DUP
 		v.dstack.push(v.dstack.peek())
 		v.pc++
-	case 31 << 24: // OR
+	case 20 << 24: // OR
 		v.dstack.replace(v.dstack.pop() | v.dstack.peek())
 		v.pc++
-	case 32 << 24: // JZ (val addr --)
+	case 21 << 24: // JZ (val addr --)
 		addr := v.dstack.pop()
 		val := v.dstack.pop()
 		if val == 0 {
@@ -183,7 +182,7 @@ func (v *VMStack) Step() (bool, error) {
 		} else {
 			v.pc++
 		}
-	case 33 << 24: // JGT (val addr --)
+	case 22 << 24: // JGT (val addr --)
 		addr := v.dstack.pop()
 		val := v.dstack.pop()
 		if val != 0 && val <= math.MaxInt32 {
@@ -191,7 +190,7 @@ func (v *VMStack) Step() (bool, error) {
 		} else {
 			v.pc++
 		}
-	case 34 << 24: // ROT (a b c -- b c a)
+	case 23 << 24: // ROT (a b c -- b c a)
 		c := v.dstack.pop()
 		b := v.dstack.pop()
 		a := v.dstack.peek()
@@ -199,7 +198,7 @@ func (v *VMStack) Step() (bool, error) {
 		v.dstack.push(c)
 		v.dstack.push(a)
 		v.pc++
-	case 35 << 24: // OVER (a b -- a b a)
+	case 24 << 24: // OVER (a b -- a b a)
 		b := v.dstack.pop()
 		a := v.dstack.peek()
 		v.dstack.push(b)
