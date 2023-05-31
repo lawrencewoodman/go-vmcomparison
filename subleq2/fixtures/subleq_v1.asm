@@ -3,7 +3,7 @@
 
         ; Fetch operands
 fetch:  memLoc memLoc
-        opA opA
+        memA memA
         opB opB
         opC opC
         mmemBase memLoc
@@ -11,26 +11,22 @@ fetch:  memLoc memLoc
         z memLoc
         z z
         [memLoc] z
-        z opA
+        z memA
+        mmemBase memA
         z z
         lm1 memLoc
         [memLoc] z
         z opB
-        z z
-        lm1 memLoc
-        [memLoc] z
-        z opC
-        z z
-
-exec:   ; Execute
-        mmemBase opA
         memB memB
         mmemBase memB
-        opB z
         z memB
         z z
-        [opA] [memB]
+        lm1 memLoc
+        ; Store opC as a negative number to make mov to PC quicker
+        [memLoc] opC
 
+exec:   ; Execute
+        [memA] [memB]
 
         ; If opB == 1000 THEN halt
         opB l1000 bge1000
@@ -48,13 +44,11 @@ incPC:  lm3 pc
         z z fetch
 
 jmpC:   pc pc
-        opC z
-        z pc
+        opC pc
         z z fetch
 
         ; HLT
-halt:   hltVal hltVal
-        [memB] z
+halt:   [memB] z
         z hltVal
         z z
         lm1 1000
@@ -69,9 +63,9 @@ hltVal: 0
 mmemBase: 0-program
 memBase: program
 memLoc:  0
-opA:     0
 opB:     0
 opC:     0
+memA:    0
 memB:    0
 
 ; loopuntil_v1 from subleq/fixtures/
