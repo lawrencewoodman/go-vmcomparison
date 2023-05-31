@@ -1,29 +1,27 @@
-        ; Version 1
+        ; Version 2
         ; SUBLEQ emulator
+        ; Store PC including memBase
 
         ; Fetch operands
-fetch:  memLoc memLoc
-        memA memA
-        opB opB
-        opC opC
-        mmemBase memLoc
-        pc z
-        z memLoc
-        z z
-        [memLoc] z
+fetch:  memA memA
+        [pc] z
         z memA
         mmemBase memA
         z z
-        lm1 memLoc
-        [memLoc] z
-        z opB
+        ; opB and memB
+        lm1 pc
+        opB opB
         memB memB
         mmemBase memB
+        [pc] z
+        z opB
         z memB
         z z
-        lm1 memLoc
+        ; opC
         ; Store opC as a negative number to make mov to PC quicker
-        [memLoc] opC
+        lm1 pc
+        opC opC
+        [pc] opC
 
 exec:   ; Execute
         [memA] [memB]
@@ -40,10 +38,11 @@ ifJmp:  l1000 l1000
 
         z [memB] jmpC
 
-incPC:  lm3 pc
+incPC:  lm1 pc
         z z fetch
 
 jmpC:   pc pc
+        mmemBase pc
         opC pc
         z z fetch
 
@@ -54,14 +53,13 @@ halt:   [memB] z
         lm1 1000
 
 lm1:    -1
-lm3:    -3
 lm1000: -1000
 l1000:  1000
 z:      0
-pc:     0
+; TODO: work out why need 0+program instead of just program
+pc:     0+program
 hltVal: 0
 mmemBase: 0-program
-memLoc:  0
 opB:     0
 opC:     0
 memA:    0
