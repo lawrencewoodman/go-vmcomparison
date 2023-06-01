@@ -36,7 +36,6 @@ incPC:  ADD     l3 pc
 halt:   MOV I   memB hltVal
         HLT     ok
 
-l0:      0
 l1:      1
 l3:      3
 l1000:   1000
@@ -50,7 +49,6 @@ opA:     0
 opB:     0
 opC:     0
 ok:      0
-maxint32: 2147483647     ; The maximum signed 32-bit value, anything greater indicates a negative number
 
 ; loopuntil_v1 from subleq/fixtures/
 program:
