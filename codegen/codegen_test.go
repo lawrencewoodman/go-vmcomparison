@@ -20,6 +20,14 @@ val:     	23
 
 // A compiled TAD
 func initTAD() ([]uint, []func(*CGVM)) {
+	// Memory locations
+	const (
+		m_memBase = 1
+		m_opAddr  = 2
+		m_lac     = 3
+		m_ok      = 4
+		m_val     = 5
+	)
 	mem := []uint{
 		555, // Just to create an offset from 0
 		1,   // memBase
@@ -30,10 +38,10 @@ func initTAD() ([]uint, []func(*CGVM)) {
 	}
 
 	program := []func(v *CGVM){
-		func(v *CGVM) { op_LDA(v, calcBaseIndexAddr(v, 1, 2)) },
-		func(v *CGVM) { op_ADD(v, 3) },
-		func(v *CGVM) { op_STA13(v, 3) },
-		func(v *CGVM) { op_HLT(v, 4) },
+		func(v *CGVM) { op_LDA(v, calcBaseIndexAddr(v, m_memBase, m_opAddr)) },
+		func(v *CGVM) { op_ADD(v, m_lac) },
+		func(v *CGVM) { op_STA13(v, m_lac) },
+		func(v *CGVM) { op_HLT(v, m_ok) },
 	}
 	return mem, program
 }
@@ -59,6 +67,15 @@ l150:   150
 
 // A compiled LoopUntil
 func initLoopUntil() ([]uint, []func(*CGVM)) {
+	// Memory locations
+	const (
+		m_sum   = 1
+		m_ok    = 2
+		m_cnt   = 3
+		m_l0    = 4
+		m_l1    = 5
+		m_l5000 = 6
+	)
 	mem := []uint{
 		555,  // Just to create an offset from 0
 		0,    // sum
@@ -68,15 +85,20 @@ func initLoopUntil() ([]uint, []func(*CGVM)) {
 		1,    // l1
 		5000, // l5000
 	}
+	// Program locations
+	const (
+		p_loop = 3
+	)
 	program := []func(v *CGVM){
-		func(v *CGVM) { op_LDA(v, 6) },
-		func(v *CGVM) { op_STA(v, 3) },
-		func(v *CGVM) { op_LDA(v, 4) },
-		func(v *CGVM) { op_ADD(v, 5) },
-		func(v *CGVM) { op_DSZ(v, 3) },
-		func(v *CGVM) { op_JMP(v, 3) },
-		func(v *CGVM) { op_STA(v, 1) },
-		func(v *CGVM) { op_HLT(v, 2) },
+		func(v *CGVM) { op_LDA(v, m_l5000) },
+		func(v *CGVM) { op_STA(v, m_cnt) },
+		func(v *CGVM) { op_LDA(v, m_l0) },
+		// loop:
+		func(v *CGVM) { op_ADD(v, m_l1) },
+		func(v *CGVM) { op_DSZ(v, m_cnt) },
+		func(v *CGVM) { op_JMP(v, p_loop) },
+		func(v *CGVM) { op_STA(v, m_sum) },
+		func(v *CGVM) { op_HLT(v, m_ok) },
 	}
 	return mem, program
 }
