@@ -27,15 +27,16 @@ type TestFile struct {
 	want         map[uint]uint
 }
 
+var testFiles = []TestFile{
+	{"tad_v1_test.go", "tad_v1.asm", map[uint]uint{3: 32}},
+	{"subleq_v1_test.go", "subleq_v1.asm", map[uint]uint{22: 5000}},
+	{"loopuntil_v1_test.go", "loopuntil_v1.asm", map[uint]uint{0: 5000}},
+}
+
 // Create test files if they don't exist or the source has changed
 func createTestFiles() (int, error) {
-	expectedTestFiles := []TestFile{
-		{"tad_v1_test.go", "tad_v1.asm", map[uint]uint{3: 32}},
-		{"subleq_v1_test.go", "subleq_v1.asm", map[uint]uint{22: 5000}},
-		{"loopuntil_v1_test.go", "loopuntil_v1.asm", map[uint]uint{0: 5000}},
-	}
 	filesWritten := 0
-	for _, testFile := range expectedTestFiles {
+	for _, testFile := range testFiles {
 		writeFile := false
 		asmFilename := filepath.Join("fixtures", testFile.asmFilename)
 		source, err := asm(asmFilename, testFile.want)
