@@ -92,15 +92,6 @@ func op_STA(v *CGVM, addr uint) {
 	// TODO: what to do about PC being too high
 }
 
-func op_STA13(v *CGVM, addr uint) {
-	if addr >= memSize {
-		// TODO: Implement an error
-		panic("outside memory range")
-	}
-	v.mem[addr] = v.ac & 0o17777
-	v.pc = mask32(v.pc + 1)
-}
-
 func op_LDA(v *CGVM, addr uint) {
 	if addr >= memSize {
 		// TODO: Implement an error
