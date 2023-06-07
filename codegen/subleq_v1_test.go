@@ -77,5 +77,5 @@ func initsubleq_v1() ([]uint, []func(*CGVM)) {
 }
 
 func init() {
-	addTest("subleq_v1", initsubleq_v1, map[uint]uint{22: 5000,})
+	addTest("subleq_v1.asm", initsubleq_v1, map[uint]uint{22: 5000,})
 }

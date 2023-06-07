@@ -37,5 +37,5 @@ func initloopuntil_v1() ([]uint, []func(*CGVM)) {
 }
 
 func init() {
-	addTest("loopuntil_v1", initloopuntil_v1, map[uint]uint{0: 5000,})
+	addTest("loopuntil_v1.asm", initloopuntil_v1, map[uint]uint{0: 5000,})
 }

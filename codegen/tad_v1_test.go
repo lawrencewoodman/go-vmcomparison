@@ -33,5 +33,5 @@ func inittad_v1() ([]uint, []func(*CGVM)) {
 }
 
 func init() {
-	addTest("tad_v1", inittad_v1, map[uint]uint{3: 32,})
+	addTest("tad_v1.asm", inittad_v1, map[uint]uint{3: 32,})
 }

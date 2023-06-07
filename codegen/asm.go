@@ -295,7 +295,8 @@ func asm(filename string, want map[uint]uint) (string, error) {
 	code += "\treturn memory, program\n"
 	code += "}\n\n"
 	code += "func init() {\n"
-	code += fmt.Sprintf("\taddTest(\"%s\", init%s, %s)\n", cmd_name, cmd_name, makeWantMapStr(want))
+	code += fmt.Sprintf("\taddTest(\"%s\", init%s, %s)\n",
+		filepath.Base(filename), cmd_name, makeWantMapStr(want))
 	code += "}\n"
 	return code, nil
 }
