@@ -73,6 +73,15 @@ func op_SUB(v *CGVM, addr uint) {
 	v.pc = mask32(v.pc + 1)
 }
 
+func op_AND(v *CGVM, addr uint) {
+	if addr >= memSize {
+		// TODO: Implement an error
+		panic("outside memory range")
+	}
+	v.ac = v.ac & v.mem[addr]
+	v.pc = mask32(v.pc + 1)
+}
+
 func op_STA(v *CGVM, addr uint) {
 	if addr >= memSize {
 		// TODO: Implement an error
