@@ -52,7 +52,7 @@ getB:   0 z
         getC getC
         pc z
         z getC
-        z z
+        ; z z   - this is done below
 
         ; [pc] opC
 getC:   0 opC
@@ -65,7 +65,8 @@ exec:   0 0
         opB l1000 bge1000
         z z ifJmp
 
-bge1000: l1000 z halt
+bge1000: z z
+        l1000 z halt
 
         ; If mem[opB] <= 0 THEN jump to opC
 ifJmp:  l1000 l1000
