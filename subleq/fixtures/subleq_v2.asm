@@ -24,7 +24,6 @@ getA:   0 z
         ; Modify getB to create: [pc] z
         getB getB
         pc getB
-        z z
 
         ; [pc] z
 getB:   0 z
