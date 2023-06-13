@@ -19,8 +19,6 @@ getA:   0 z
         ; opB and memB
         lm1 pc
         opB opB
-        memB memB
-        mmemBase memB
 
         ; Modify getB to create: [pc] z
         getB getB
@@ -31,8 +29,8 @@ getA:   0 z
         ; [pc] z
 getB:   0 z
         z opB
-        z memB
-        z z
+        ; Use this to create memB := memBase + opB
+        memBase z
 
         ; Modify exec to create: [memA] [memB]   - this just does [memB]
         ; Modify cmemB to create: z [memB] jmpC
@@ -40,7 +38,6 @@ getB:   0 z
         exec+1 exec+1
         cmemB+1 cmemB+1
         halt halt
-        memB z
         z exec+1
         z cmemB+1
         z halt
@@ -99,10 +96,10 @@ z:      0
 ; TODO: work out why need 0+program instead of just program
 pc:     0+program
 hltVal: 0
+memBase: program
 mmemBase: 0-program
 opB:     0
 opC:     0
-memB:    0
 
 ; loopuntil_v1 from subleq/fixtures/
 program:
