@@ -16,7 +16,8 @@ fetch:  memA memA
         [pc] z
         z opB
         z memB
-        z z
+        ; z z - moved to bge1000
+
         ; opC
         ; Store opC as a negative number to make mov to PC quicker
         lm1 pc
@@ -30,7 +31,8 @@ exec:   ; Execute
         opB l1000 bge1000
         z z ifJmp
 
-bge1000: l1000 z halt
+bge1000: z z
+        l1000 z halt
 
         ; If mem[opB] <= 0 THEN jump to opC
 ifJmp:  l1000 l1000
