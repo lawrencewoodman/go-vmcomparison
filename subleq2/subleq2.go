@@ -71,10 +71,11 @@ func (v *SUBLEQ) getOperand(operand int) (int, error) {
 		if operand < 0 {
 			return 0, fmt.Errorf("PC: %d, double indirect not supported", v.pc)
 		}
-		if operand >= memSize {
-			return 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operand)
-		}
 	}
+	if operand >= memSize {
+		return 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operand)
+	}
+
 	return operand, nil
 }
 
