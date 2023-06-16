@@ -70,24 +70,27 @@ func (v *SUBLEQ) LoadRoutine(routine []*big.Int, symbols map[string]*big.Int) {
 // getOperand returns the operand as supplied unless it is negative in which
 // case it returns the value at the location in memory pointed to by the
 // operand
-func (v *SUBLEQ) getOperand(operand *big.Int) (*big.Int, error) {
-	addr := new(big.Int)
-	if operand.Sign() < 0 {
-		addr.Abs(operand)
-		// if operand >= memSize
-		if addr.Cmp(big.NewInt(memSize)) >= 0 {
-			return big.NewInt(0), fmt.Errorf("PC: %d, outside memory range: %d", v.pc, addr)
-		}
-		addr = v.mem[addr.Int64()]
-		if addr.Sign() < 0 {
-			return big.NewInt(0), fmt.Errorf("PC: %d, double indirect not supported", v.pc)
-		}
-	} else {
-		addr.Set(operand)
+func (v *SUBLEQ) getOperand(operand *big.Int) (int64, error) {
+	if !operand.IsInt64() {
+		return 0, fmt.Errorf("PC: %d, outside memory range", v.pc)
 	}
-	// if addr >= memSize
-	if addr.Cmp(big.NewInt(memSize)) >= 0 {
-		return big.NewInt(0), fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operand)
+	addr := operand.Int64()
+	if addr < 0 {
+		addr = 0 - addr
+		if addr >= memSize {
+			return 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, addr)
+		}
+		iaddr := v.mem[addr]
+		if !iaddr.IsInt64() {
+			return 0, fmt.Errorf("PC: %d, outside memory range", v.pc)
+		}
+		addr = iaddr.Int64()
+		if addr < 0 {
+			return 0, fmt.Errorf("PC: %d, double indirect not supported", v.pc)
+		}
+	}
+	if addr >= memSize {
+		return 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, addr)
 	}
 
 	return addr, nil
@@ -95,31 +98,31 @@ func (v *SUBLEQ) getOperand(operand *big.Int) (*big.Int, error) {
 
 // fetch gets the next instruction from memory
 // Returns: A, B, C, error
-func (v *SUBLEQ) fetch() (*big.Int, *big.Int, *big.Int, error) {
+func (v *SUBLEQ) fetch() (int64, int64, int64, error) {
+	var a, b, c int64
 	var err error
 
 	if v.pc+2 >= memSize {
-		return big.NewInt(0), big.NewInt(0), big.NewInt(0),
-			fmt.Errorf("PC: %d, outside memory range: %d", v.pc, v.pc)
+		return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, v.pc)
 	}
 	operandA := v.mem[v.pc]
 	operandB := v.mem[v.pc+1]
 	operandC := v.mem[v.pc+2]
 
-	operandA, err = v.getOperand(operandA)
+	a, err = v.getOperand(operandA)
 	if err != nil {
-		return big.NewInt(0), big.NewInt(0), big.NewInt(0), err
+		return 0, 0, 0, err
 	}
-	operandB, err = v.getOperand(operandB)
+	b, err = v.getOperand(operandB)
 	if err != nil {
-		return big.NewInt(0), big.NewInt(0), big.NewInt(0), err
+		return 0, 0, 0, err
 	}
-	operandC, err = v.getOperand(operandC)
+	c, err = v.getOperand(operandC)
 	if err != nil {
-		return big.NewInt(0), big.NewInt(0), big.NewInt(0), err
+		return 0, 0, 0, err
 	}
 
-	return operandA, operandB, operandC, nil
+	return a, b, c, nil
 }
 
 func (v *SUBLEQ) addr2symbol(addr *big.Int) string {
@@ -133,19 +136,18 @@ func (v *SUBLEQ) addr2symbol(addr *big.Int) string {
 
 // execute executes the supplied instruction
 // Returns: hlt, error
-func (v *SUBLEQ) execute(operandA *big.Int, operandB *big.Int, operandC *big.Int) bool {
+func (v *SUBLEQ) execute(operandA int64, operandB int64, operandC int64) bool {
 	//fmt.Printf("PC: %7s    SUBLEQ %s, %s, %s\n", v.addr2symbol(big.NewInt(v.pc)), v.addr2symbol(operandA), v.addr2symbol(operandB), v.addr2symbol(operandC))
 	//fmt.Printf("                      %d - %d = ", v.mem[operandB.Int64()], v.mem[operandA.Int64()])
-	b := operandB.Int64()
-	v.mem[b].Sub(v.mem[b], v.mem[operandA.Int64()])
+	v.mem[operandB].Sub(v.mem[operandB], v.mem[operandA])
 	//fmt.Printf("%d\n", v.mem[operandB.Int64()])
-	if b == hltLoc {
-		v.hltVal = v.mem[b]
+	if operandB == hltLoc {
+		v.hltVal = v.mem[operandB]
 		return true
 	}
 
-	if v.mem[b].Sign() <= 0 {
-		v.pc = operandC.Int64()
+	if v.mem[operandB].Sign() <= 0 {
+		v.pc = operandC
 	} else {
 		v.pc += 3
 	}
