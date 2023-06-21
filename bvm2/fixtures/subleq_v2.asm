@@ -36,6 +36,7 @@ incPC:  ADD     l3 pc
 halt:   MOV I   memB hltVal
         HLT     ok
 
+.data
 l1:      1
 l3:      3
 l1000:   1000

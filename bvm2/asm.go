@@ -14,6 +14,7 @@ import (
 	"math/big"
 	"os"
 	"regexp"
+	"strconv"
 )
 
 var instructions = map[string]int64{
@@ -60,34 +61,51 @@ var reLabel = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]*):`)
 var reInstr = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]+)\s+`)
 var reAddrMode = regexp.MustCompile(`^\s*([diDI]{1,2})\s+`)
 var reOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z]+)`)
-var reLiteral = regexp.MustCompile(`^\s*([\-]?[0-9]+).*`)
+var reLiteral = regexp.MustCompile(`^\s*(\-?[0-9]+).*`)
+var reDirective = regexp.MustCompile(`^\.([a-zA-Z]+)$`)
 var reSymbol = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]*).*`)
 
-// Build symbol table
-func pass1(srcLines []string) map[string]*big.Int {
-	var pos int64 = 0
-	symbols := make(map[string]*big.Int, 0)
+// pass1 returns program and data symbol tables
+func pass1(srcLines []string) (map[string]int64, map[string]int64) {
+	symbolType := "c"
+	var memPos int64 = 0
+	var progPos int64 = 0
+	progSymbols := make(map[string]int64, 0)
+	memSymbols := make(map[string]int64, 0)
 	for _, line := range srcLines {
+		// If there is a directive
+		if reDirective.MatchString(line) {
+			directive := reDirective.FindStringSubmatch(line)[1]
+			if directive == "data" {
+				symbolType = "d"
+			} else {
+				panic(fmt.Sprintf("unknown directive: .%s", directive))
+			}
+		}
 		// If there is a label
 		if reLabel.MatchString(line) {
 			label := reLabel.FindStringSubmatch(line)[1]
 			matchIndices := reLabel.FindStringSubmatchIndex(line)
-			symbols[label] = big.NewInt(pos)
+			if symbolType == "c" {
+				progSymbols[label] = progPos
+			} else {
+				memSymbols[label] = memPos
+			}
 			line = line[matchIndices[1]:]
 		}
 
 		// If there is an instruction
 		if reInstr.MatchString(line) {
-			pos += 3
+			progPos += 3
 		} else if reLiteral.MatchString(line) {
 			// If there is a literal value
-			pos++
+			memPos++
 		} else if reSymbol.MatchString(line) {
 			// If there is a symbol
-			pos++
+			memPos++
 		}
 	}
-	return symbols
+	return progSymbols, memSymbols
 }
 
 // Returns: operand, restLine
@@ -109,9 +127,21 @@ func getOperand(line string, addrMode string) (string, string) {
 	return operand, line
 }
 
-func pass2(srcLines []string, symbols map[string]*big.Int) []*big.Int {
-	code := make([]*big.Int, 0)
+// pass2 returns code and data
+func pass2(srcLines []string, codeSymbols, dataSymbols map[string]int64) ([]int64, []*big.Int) {
+	outputType := "c"
+	code := make([]int64, 0)
+	data := make([]*big.Int, 0)
 	for _, line := range srcLines {
+		// If there is a directive
+		if reDirective.MatchString(line) {
+			directive := reDirective.FindStringSubmatch(line)[1]
+			if directive == "data" {
+				outputType = "d"
+			} else {
+				panic(fmt.Sprintf("unknown directive: .%s", directive))
+			}
+		}
 		// If there is a label
 		if reLabel.MatchString(line) {
 			// Remove from line
@@ -138,7 +168,7 @@ func pass2(srcLines []string, symbols map[string]*big.Int) []*big.Int {
 			if len(line) > 0 {
 				panic(fmt.Sprintf("remaining line: %s", line))
 			}
-			code = append(code, asmInstr(symbols, instr, addrMode, operandA, operandB)...)
+			code = append(code, asmInstr(codeSymbols, dataSymbols, instr, addrMode, operandA, operandB)...)
 		} else if reLiteral.MatchString(line) {
 			// If there is a literal value
 			lit := reLiteral.FindStringSubmatch(line)[1]
@@ -146,64 +176,83 @@ func pass2(srcLines []string, symbols map[string]*big.Int) []*big.Int {
 			if !ok {
 				panic("can't create literal value")
 			}
-			code = append(code, num)
+			if outputType == "d" {
+				data = append(data, num)
+			} else {
+				panic("literal shouldn't appear here")
+			}
 		} else if reSymbol.MatchString(line) {
 			// If there is a symbol
 			sym := reSymbol.FindStringSubmatch(line)[1]
-			v, ok := symbols[sym]
-			if !ok {
-				panic(fmt.Sprintf("unknown symbol: %s", sym))
+			addr, err := resolveSymbol(codeSymbols, dataSymbols, sym)
+			if err != nil {
+				panic(err)
 			}
-			code = append(code, v)
+			if outputType == "d" {
+				data = append(data, big.NewInt(addr))
+			} else {
+				panic("symbol shouldn't appear here")
+			}
 		}
 	}
-	return code
+	return code, data
 }
 
-func resolveOperand(symbols map[string]*big.Int, operand string) *big.Int {
+func resolveSymbol(codeSymbols, dataSymbols map[string]int64, sym string) (int64, error) {
+	v, ok := codeSymbols[sym]
+	if !ok {
+		v, ok = dataSymbols[sym]
+		if !ok {
+			return v, fmt.Errorf("unknown symbol: %s", sym)
+		}
+	}
+	return v, nil
+
+}
+
+func resolveOperand(codeSymbols, dataSymbols map[string]int64, operand string) int64 {
 	// If operand is a literal value
 	if reLiteral.MatchString(operand) {
-		num, ok := new(big.Int).SetString(operand, 10)
-		if !ok {
-			panic("can't create literal value")
+		addr, err := strconv.ParseInt(operand, 10, 64)
+		if err != nil {
+			panic(err)
 		}
-		return num
+		return addr
 	}
-	v, ok := symbols[operand]
-	if !ok {
-		panic(fmt.Sprintf("unknown operand: %s", operand))
+	addr, err := resolveSymbol(codeSymbols, dataSymbols, operand)
+	if err != nil {
+		panic(err)
 	}
-	return v
+	return addr
 }
 
-func asmInstr(symbols map[string]*big.Int, instr string, addrMode string, operandA string, operandB string) []*big.Int {
+func asmInstr(codeSymbols, dataSymbols map[string]int64, instr string, addrMode string, operandA string, operandB string) []int64 {
 	opcode, ok := instructions[instr]
 	if !ok {
 		panic(fmt.Sprintf("unknown instruction: %s", instr))
 	}
 
-	opA := resolveOperand(symbols, operandA)
-	opB := resolveOperand(symbols, operandB)
+	opA := resolveOperand(codeSymbols, dataSymbols, operandA)
+	opB := resolveOperand(codeSymbols, dataSymbols, operandB)
 
 	switch addrMode {
 	case "":
 	case "I":
-
-		opA = big.NewInt(0).Neg(opA)
+		opA = 0 - opA
 	case "DI":
-		opB = big.NewInt(0).Neg(opB)
+		opB = 0 - opB
 	case "II":
-		opA = big.NewInt(0).Neg(opA)
-		opB = big.NewInt(0).Neg(opB)
+		opA = 0 - opA
+		opB = 0 - opB
 	default:
 		panic(fmt.Sprintf("unknown addressing mode: %s", addrMode))
 	}
 
-	code := []*big.Int{big.NewInt(opcode), opA, opB}
+	code := []int64{opcode, opA, opB}
 	return code
 }
 
-func printCode(code []*big.Int) {
+func printCode(code []int64) {
 	fmt.Printf("\nCODE\n====")
 	for i, v := range code {
 		if i%10 == 0 {
@@ -222,15 +271,15 @@ func printSymbols(symbols map[string]*big.Int) {
 	fmt.Printf("\n")
 }
 
-func asm(filename string) ([]*big.Int, map[string]*big.Int, error) {
+func asm(filename string) ([]int64, []*big.Int, map[string]int64, map[string]int64, error) {
 	srcLines, err := readFile(filename)
 	if err != nil {
-		return []*big.Int{}, map[string]*big.Int{}, err
+		return []int64{}, []*big.Int{}, map[string]int64{}, map[string]int64{}, err
 	}
-	symbols := pass1(srcLines)
-	code := pass2(srcLines, symbols)
+	codeSymbols, dataSymbols := pass1(srcLines)
+	code, data := pass2(srcLines, codeSymbols, dataSymbols)
 	//printSymbols(symbols)
 	//printCode(code)
 
-	return code, symbols, nil
+	return code, data, codeSymbols, dataSymbols, nil
 }

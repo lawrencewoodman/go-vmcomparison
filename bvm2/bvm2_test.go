@@ -11,30 +11,30 @@ var tests = []struct {
 	filename string
 	want     map[int64]int64 // [memloc]value
 }{
-	{"add12_v1.asm", map[int64]int64{11: 4}},
-	{"and_v1.asm", map[int64]int64{22: 4499}},
-	{"tad_v1.asm", map[int64]int64{19: 32}},
-	{"isz_v1.asm", map[int64]int64{28: 9, 30: 24}},
-	{"jsr_v1.asm", map[int64]int64{9: 50}},
-	{"loopuntil_v1.asm", map[int64]int64{12: 5000}},
+	{"add12_v1.asm", map[int64]int64{2: 4}},
+	{"and_v1.asm", map[int64]int64{4: 4499}},
+	{"tad_v1.asm", map[int64]int64{4: 32}},
+	{"isz_v1.asm", map[int64]int64{4: 9, 6: 24}},
+	{"jsr_v1.asm", map[int64]int64{2: 50}},
+	{"loopuntil_v1.asm", map[int64]int64{0: 5000}},
 	// TODO: reinstate subleq_v1?
 	//{"subleq_v1.asm", map[int64]int64{101: 5000}},
-	{"subleq_v2.asm", map[int64]int64{90: 5000}},
-	{"subleq_v3.asm", map[int64]int64{79: 5000}},
+	{"subleq_v2.asm", map[int64]int64{27: 5000}},
+	{"subleq_v3.asm", map[int64]int64{25: 5000}},
 	//TODO: reinstate switch_v1
 	//{"switch_v1.asm", map[int64]int64{44: 2255}},
-	{"switch_v2.asm", map[int64]int64{78: 2255}},
+	{"switch_v2.asm", map[int64]int64{0: 2255}},
 }
 
 func TestRun(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.filename, func(t *testing.T) {
-			routine, symbols, err := asm(filepath.Join("fixtures", test.filename))
+			code, data, codeSymbols, dataSymbols, err := asm(filepath.Join("fixtures", test.filename))
 			if err != nil {
 				t.Fatalf("asm() err: %v", err)
 			}
 			v := New()
-			v.LoadRoutine(routine, symbols)
+			v.LoadRoutine(code, data, codeSymbols, dataSymbols)
 			_, err = v.Run()
 			if err != nil {
 				t.Fatalf("Run() err: %v", err)
@@ -50,7 +50,7 @@ func TestRun(t *testing.T) {
 
 func BenchmarkRun(b *testing.B) {
 	for _, test := range tests {
-		routine, symbols, err := asm(filepath.Join("fixtures", test.filename))
+		code, data, codeSymbols, dataSymbols, err := asm(filepath.Join("fixtures", test.filename))
 		if err != nil {
 			b.Fatalf("asm() err: %v", err)
 		}
@@ -59,7 +59,7 @@ func BenchmarkRun(b *testing.B) {
 
 			for n := 0; n < b.N; n++ {
 				v := New()
-				v.LoadRoutine(routine, symbols)
+				v.LoadRoutine(code, data, codeSymbols, dataSymbols)
 
 				b.StartTimer()
 				_, err = v.Run()
@@ -75,6 +75,6 @@ func BenchmarkRun(b *testing.B) {
 				}
 			}
 		})
-		fmt.Printf("Routine: %s size: %d\n", test.filename, len(routine))
+		fmt.Printf("Routine: %s size: %d\n", test.filename, len(code)+len(data))
 	}
 }

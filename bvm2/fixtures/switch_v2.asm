@@ -10,17 +10,6 @@ loop:       MOV     switchTable tableLoc
 decCnt:     DJNZ    cnt loop
             HLT     ok 0
 
-switchTable: 21    ; TODO: Allow switchTable or similar here
-case0
-case1
-case2
-case3
-case4
-case5
-case6
-case7
-
-
 switch:
 case0:      ADD     l11 lac
             JMP     decCnt 0
@@ -46,7 +35,7 @@ case6:      ADD     l592 lac
 case7:      ADD     l1001 lac
             JMP     decCnt 0
 
-
+.data
 lac:     3
 ok:      0
 cnt:     0
@@ -62,3 +51,13 @@ l592:   592
 l1001:  1001
 tableLoc: 0
 caseLoc: 0
+
+switchTable: 15    ; TODO: Allow switchTable or similar here
+case0
+case1
+case2
+case3
+case4
+case5
+case6
+case7

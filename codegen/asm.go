@@ -76,7 +76,7 @@ var reIndexOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z]+),([0-9a-zA-z]+).*`)
 var reDirective = regexp.MustCompile(`^\.([a-zA-Z]+)$`)
 var reFilename = regexp.MustCompile(`^([0-9a-zA-z_]+).*`)
 
-// Build symbol table
+// pass1 returns program and data symbol tables
 func pass1(srcLines []string) (map[string]uint, map[string]uint) {
 	symbolType := "p"
 	var memPos uint = 0

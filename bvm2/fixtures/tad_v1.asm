@@ -5,7 +5,9 @@
         ADD I   memLoc lac
         AND     mask13 lac
         HLT     ok 0
-memBase: 15
+
+.data
+memBase: 0
 opAddr:  6
 memLoc:  0
 mask13:  8191    ; 0o17777

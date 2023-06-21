@@ -17,10 +17,12 @@ import (
 const memSize = 32000
 
 type VM2 struct {
-	mem     [memSize]*big.Int   // Memory
-	pc      int64               // Program Counter
-	hltVal  *big.Int            // A value returned by HLT
-	symbols map[string]*big.Int // The symbols table from the assembler - to aid debugging
+	code        [memSize]int64    // Code / Program
+	mem         [memSize]*big.Int // Memory
+	pc          int64             // Program Counter
+	hltVal      *big.Int          // A value returned by HLT
+	codeSymbols map[string]int64  // The code symbols table from the assembler - to aid debugging
+	dataSymbols map[string]int64  // The data symbols table from the assembler - to aid debugging
 }
 
 func New() *VM2 {
@@ -56,12 +58,14 @@ func (v *VM2) Mem() [memSize]*big.Int {
 	return v.mem
 }
 
-func (v *VM2) LoadRoutine(routine []*big.Int, symbols map[string]*big.Int) {
+func (v *VM2) LoadRoutine(code []int64, data []*big.Int, codeSymbols map[string]int64, dataSymbols map[string]int64) {
 	// Need to copy the individual data points of the routine because they are pointers
-	for i, d := range routine {
+	for i, d := range data {
 		v.mem[i].Set(d)
 	}
-	v.symbols = symbols
+	copy(v.code[:], code)
+	v.codeSymbols = codeSymbols
+	v.dataSymbols = dataSymbols
 }
 
 // fetch gets the next instruction from memory
@@ -71,64 +75,55 @@ func (v *VM2) fetch() (int64, int64, int64, error) {
 	if v.pc+2 >= memSize {
 		return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, v.pc+1)
 	}
-	opcode := v.mem[v.pc]
-	operandA := v.mem[v.pc+1]
-	operandB := v.mem[v.pc+2]
-
-	if !opcode.IsInt64() {
-		return 0, 0, 0, fmt.Errorf("PC: %d, opcode is not int64", v.pc)
-	}
-
-	if !operandA.IsInt64() {
-		return 0, 0, 0, fmt.Errorf("PC: %d, operand A is not int64", v.pc)
-	}
-
-	if !operandB.IsInt64() {
-		return 0, 0, 0, fmt.Errorf("PC: %d, operand B is not int64", v.pc)
-	}
-
-	iOpcode := opcode.Int64()
-	iOperandA := operandA.Int64()
-	iOperandB := operandB.Int64()
+	opcode := v.code[v.pc]
+	operandA := v.code[v.pc+1]
+	operandB := v.code[v.pc+2]
 
 	// If addressing mode: operand A indirect
-	if iOperandA < 0 {
-		iOperandA = -iOperandA
-		if iOperandA >= memSize {
+	if operandA < 0 {
+		operandA = -operandA
+		if operandA >= memSize {
 			return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandA)
 		}
-		operandA := v.mem[iOperandA]
-		if !operandA.IsInt64() {
+		iOperandA := v.mem[operandA]
+		if !iOperandA.IsInt64() {
 			return 0, 0, 0, fmt.Errorf("PC: %d, operand A not int64", v.pc)
 		}
-		iOperandA = operandA.Int64()
+		operandA = iOperandA.Int64()
 	}
-	if iOperandA >= memSize {
+	if operandA >= memSize {
 		return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandA)
 	}
 
 	// If addressing mode: operand B indirect
-	if iOperandB < 0 {
-		iOperandB = -iOperandB
-		if iOperandB >= memSize {
+	if operandB < 0 {
+		operandB = -operandB
+		if operandB >= memSize {
 			return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandB)
 		}
-		operandB := v.mem[iOperandB]
-		if !operandB.IsInt64() {
+		iOperandB := v.mem[operandB]
+		if !iOperandB.IsInt64() {
 			return 0, 0, 0, fmt.Errorf("PC: %d, operand B not int64", v.pc)
 		}
-		iOperandB = operandB.Int64()
+		operandB = iOperandB.Int64()
 	}
-	if iOperandB >= memSize {
+	if operandB >= memSize {
 		return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandB)
 	}
-	// TODO: Decide if should increment PC here
-	return iOpcode, iOperandA, iOperandB, nil
+	return opcode, operandA, operandB, nil
 }
 
-func (v *VM2) addr2symbol(addr int64) string {
-	for k, v := range v.symbols {
-		if v.Int64() == addr {
+func (v *VM2) addr2symbol(addr int64, onlyCode ...bool) string {
+	if len(onlyCode) == 0 {
+		for k, v := range v.dataSymbols {
+			if v == addr {
+				return k
+			}
+		}
+	}
+
+	for k, v := range v.codeSymbols {
+		if v == addr {
 			return k
 		}
 	}
@@ -147,8 +142,8 @@ func (v *VM2) opcode2mnemonic(opcode int64) string {
 // execute executes the supplied instruction
 // Returns: hlt, error
 func (v *VM2) execute(opcode int64, operandA int64, operandB int64) (bool, error) {
-	//	fmt.Printf("%7s:    %s   %s, %s\n", v.addr2symbol(v.pc), v.opcode2mnemonic(opcode), v.addr2symbol(operandA), v.addr2symbol(operandB))
-	//	fmt.Printf("            pre:  [%s]: %d, [%s]: %d\n", v.addr2symbol(operandA), v.mem[operandA], v.addr2symbol(operandB), v.mem[operandB])
+	//fmt.Printf("%7s:    %s   %s, %s\n", v.addr2symbol(v.pc, true), v.opcode2mnemonic(opcode), v.addr2symbol(operandA), v.addr2symbol(operandB))
+	//fmt.Printf("            pre:  [%s]: %d, [%s]: %d\n", v.addr2symbol(operandA), v.mem[operandA], v.addr2symbol(operandB), v.mem[operandB])
 	var one = big.NewInt(1)
 	switch opcode {
 	case 0: // HLT

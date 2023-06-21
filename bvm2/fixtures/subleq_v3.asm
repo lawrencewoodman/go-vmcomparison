@@ -31,6 +31,7 @@ jmpC:   MOV     memBase pc
 halt:   MOV I   memB hltVal
         HLT     ok
 
+.data
 l1:      1
 l1000:   1000
 pc:      program

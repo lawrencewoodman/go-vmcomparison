@@ -4,6 +4,8 @@
 loop:   ADD     l1 sum
         DJNZ    cnt loop
 done:   HLT     ok 0
+
+.data
 sum:    0
 ok:     0
 l1:     1

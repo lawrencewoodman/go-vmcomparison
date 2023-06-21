@@ -3,6 +3,8 @@
         ADD     a b
         AND     mask12 b
 done:   HLT     ok 0
+
+.data
 ok:     0
 a:      4094
 b:      6
