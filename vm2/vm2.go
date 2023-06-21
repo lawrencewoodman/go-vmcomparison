@@ -10,17 +10,16 @@ package vm2
 
 import (
 	"fmt"
-	"math"
 )
 
 // TODO: Make this configurable
 const memSize = 32000
 
 type VM2 struct {
-	mem     [memSize]uint   // Memory
-	pc      uint            // Program Counter
-	hltVal  uint            // A value returned by HLT
-	symbols map[string]uint // The symbols table from the assembler - to aid debugging
+	mem     [memSize]int64   // Memory
+	pc      int64            // Program Counter
+	hltVal  int64            // A value returned by HLT
+	symbols map[string]int64 // The symbols table from the assembler - to aid debugging
 }
 
 func New() *VM2 {
@@ -47,11 +46,11 @@ func (v *VM2) Run() (bool, error) {
 	return hlt, err
 }
 
-func (v *VM2) Mem() [memSize]uint {
+func (v *VM2) Mem() [memSize]int64 {
 	return v.mem
 }
 
-func (v *VM2) LoadRoutine(routine []uint, symbols map[string]uint) {
+func (v *VM2) LoadRoutine(routine []int64, symbols map[string]int64) {
 	copy(v.mem[:], routine)
 	v.symbols = symbols
 }
@@ -59,17 +58,17 @@ func (v *VM2) LoadRoutine(routine []uint, symbols map[string]uint) {
 // fetch gets the next instruction from memory
 // Returns: opcode, operandA, operandB
 // TODO: describe instruction format
-func (v *VM2) fetch() (uint, uint, uint, error) {
-	if v.pc+1 >= memSize {
-		return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, v.pc+1)
+func (v *VM2) fetch() (int64, int64, int64, error) {
+	if v.pc+2 >= memSize {
+		return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, v.pc+2)
 	}
-	ir := v.mem[v.pc]
-	opcode := (ir & 0x3F000000)
-	operandA := (ir & 0xFFFFFF)
-	operandB := v.mem[v.pc+1]
+	opcode := v.mem[v.pc]
+	operandA := v.mem[v.pc+1]
+	operandB := v.mem[v.pc+2]
 
 	// If addressing mode: operand A indirect
-	if ir&0x80000000 == 0x80000000 {
+	if operandA < 0 {
+		operandA = 0 - operandA
 		if operandA >= memSize {
 			return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandA)
 		}
@@ -77,7 +76,8 @@ func (v *VM2) fetch() (uint, uint, uint, error) {
 	}
 
 	// If addressing mode: operand B indirect
-	if ir&0x40000000 == 0x40000000 {
+	if operandB < 0 {
+		operandB = 0 - operandB
 		if operandB >= memSize {
 			return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandB)
 		}
@@ -95,11 +95,7 @@ func (v *VM2) fetch() (uint, uint, uint, error) {
 	return opcode, operandA, operandB, nil
 }
 
-func mask32(n uint) uint {
-	return n & 0xFFFFFFFF
-}
-
-func (v *VM2) addr2symbol(addr uint) string {
+func (v *VM2) addr2symbol(addr int64) string {
 	for k, v := range v.symbols {
 		if v == addr {
 			return k
@@ -108,83 +104,83 @@ func (v *VM2) addr2symbol(addr uint) string {
 	return fmt.Sprintf("%d", addr)
 }
 
-func (v *VM2) opcode2mnemonic(opcode uint) string {
+func (v *VM2) opcode2mnemonic(opcode int64) string {
 	for m, o := range instructions {
-		if o == opcode&0x3F000000 {
+		if o == opcode {
 			return m
 		}
 	}
-	panic("opcode not found")
+	panic(fmt.Sprintf("opcode not found: %d", opcode))
 }
 
 // execute executes the supplied instruction
 // Returns: hlt, error
-func (v *VM2) execute(opcode uint, operandA uint, operandB uint) (bool, error) {
-	//	fmt.Printf("%7s:    %s   %s, %s\n", v.addr2symbol(v.pc), v.opcode2mnemonic(opcode), v.addr2symbol(operandA), v.addr2symbol(operandB))
-	//	fmt.Printf("            pre:  [%s]: %d, [%s]: %d\n", v.addr2symbol(operandA), v.mem[operandA], v.addr2symbol(operandB), v.mem[operandB])
+func (v *VM2) execute(opcode int64, operandA int64, operandB int64) (bool, error) {
+	//fmt.Printf("%7s:    %s   %s, %s\n", v.addr2symbol(v.pc), v.opcode2mnemonic(opcode), v.addr2symbol(operandA), v.addr2symbol(operandB))
+	//fmt.Printf("            pre:  [%s]: %d, [%s]: %d\n", v.addr2symbol(operandA), v.mem[operandA], v.addr2symbol(operandB), v.mem[operandB])
 
 	switch opcode {
-	case 0 << 24: // HLT
+	case 0: // HLT
 		v.hltVal = v.mem[operandA]
 		// TODO: this wastes the following memory location, should it?
 		return true, nil
-	case 1 << 24: // MOV
+	case 1: // MOV
 		v.mem[operandB] = v.mem[operandA]
-		v.pc += 2
-	case 2 << 24: // JSR
-		v.mem[operandB] = mask32(v.pc + 2)
+		v.pc += 3
+	case 2: // JSR
+		v.mem[operandB] = v.pc + 3
 		v.pc = operandA
-	case 3 << 24: // ADD
-		v.mem[operandB] = mask32(v.mem[operandA] + v.mem[operandB])
-		v.pc += 2
-	case 4 << 24: // DJNZ
-		v.mem[operandA] = mask32(v.mem[operandA] - 1)
+	case 3: // ADD
+		v.mem[operandB] = v.mem[operandA] + v.mem[operandB]
+		v.pc += 3
+	case 4: // DJNZ
+		v.mem[operandA] = v.mem[operandA] - 1
 		if v.mem[operandA] != 0 {
 			v.pc = operandB
 		} else {
-			v.pc += 2
+			v.pc += 3
 		}
-	case 5 << 24: // JMP
+	case 5: // JMP
 		v.pc = operandA + operandB
-	case 6 << 24: // AND
+	case 6: // AND
 		v.mem[operandB] = v.mem[operandA] & v.mem[operandB]
-		v.pc += 2
-	case 7 << 24: // OR
+		v.pc += 3
+	case 7: // OR
 		v.mem[operandB] = v.mem[operandA] | v.mem[operandB]
-		v.pc += 2
-	case 8 << 24: // SHL
-		v.mem[operandB] = mask32(v.mem[operandB] << v.mem[operandA])
-		v.pc += 2
-	case 9 << 24: // JNZ
+		v.pc += 3
+	case 8: // SHL
+		v.mem[operandB] = v.mem[operandB] << v.mem[operandA]
+		v.pc += 3
+	case 9: // JNZ
 		if v.mem[operandA] != 0 {
 			v.pc = operandB
 		} else {
-			v.pc += 2
+			v.pc += 3
 		}
-	case 10 << 24: // SNE
+	case 10: // SNE
 		if v.mem[operandA] != v.mem[operandB] {
-			v.pc += 4
+			v.pc += 6
 		} else {
-			v.pc += 2
+			v.pc += 3
 		}
-	case 11 << 24: // SLE
+	case 11: // SLE
 		if v.mem[operandA] <= v.mem[operandB] {
-			v.pc += 4
+			v.pc += 6
 		} else {
-			v.pc += 2
+			v.pc += 3
 		}
-	case 12 << 24: // SUB
-		v.mem[operandB] = mask32(v.mem[operandB] - v.mem[operandA])
-		v.pc += 2
-	case 13 << 24: // JGT
-		if v.mem[operandA] != 0 && v.mem[operandA] <= math.MaxInt32 {
+	case 12: // SUB
+		v.mem[operandB] = v.mem[operandB] - v.mem[operandA]
+		v.pc += 3
+	case 13: // JGT
+		if v.mem[operandA] > 0 {
 			v.pc = operandB
 		} else {
-			v.pc += 2
+			v.pc += 3
 		}
 
 	default:
-		return false, fmt.Errorf("unknown opcode: %d (%d)", opcode, (opcode&0x3f000000)>>24)
+		return false, fmt.Errorf("PC: %d, unknown opcode: %d (%d)", v.pc, opcode, (opcode&0x3f000000)>>24)
 	}
 
 	//	fmt.Printf("            post:  [%s]: %d, [%s]: %d\n", v.addr2symbol(operandA), v.mem[operandA], v.addr2symbol(operandB), v.mem[operandB])

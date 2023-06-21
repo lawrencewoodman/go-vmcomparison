@@ -1,5 +1,6 @@
         ; Version 1
         ; SUBLEQ emulator
+        ; TODO: reimplement this as relies on 32-bit rollowver
 
         ; Fetch operands
 fetch:  MOV     memBase memLoc

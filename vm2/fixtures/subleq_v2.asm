@@ -22,7 +22,7 @@ exec:   MOV     memBase memA
         SNE     opB l1000
         JMP     halt
 
-        ; If mem[opB] <= 0 THEN jump to opC
+        ; If [opB] <= 0 THEN jump to opC
         JGT I   memB incPC
 
 jmpC:   MOV     opC pc
@@ -30,8 +30,6 @@ jmpC:   MOV     opC pc
 
 incPC:  ADD     l3 pc
         JMP     fetch
-
-
 
 halt:   MOV I   memB hltVal
         HLT     ok

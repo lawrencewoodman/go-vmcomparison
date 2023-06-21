@@ -1,6 +1,7 @@
             ; Version 1
             ; SWITCH
             ; Using JMP DI
+            ; TODO: Reimplement - relies on 2 word instructions
 
             MOV     l8 cnt
 loop:       MOV     cnt caseOff

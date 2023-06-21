@@ -8,7 +8,7 @@
         ADD     l1 pc
         AND     mask12 pc
 done:   HLT     ok 0
-memBase: 16
+memBase: 24
 opAddr:  6
 memLoc:  0
 mask12:  4095    ; 0o7777

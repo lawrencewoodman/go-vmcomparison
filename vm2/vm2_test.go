@@ -8,19 +8,21 @@ import (
 
 var tests = []struct {
 	filename string
-	want     map[uint]uint // [memloc]value
+	want     map[int64]int64 // [memloc]value
 }{
-	{"add12_v1.asm", map[uint]uint{8: 4}},
-	{"and_v1.asm", map[uint]uint{16: 4499}},
-	{"tad_v1.asm", map[uint]uint{14: 32}},
-	{"isz_v1.asm", map[uint]uint{22: 24, 20: 9}},
-	{"jsr_v1.asm", map[uint]uint{6: 50}},
-	{"loopuntil_v1.asm", map[uint]uint{8: 5000}},
-	{"subleq_v1.asm", map[uint]uint{77: 5000}},
-	{"subleq_v2.asm", map[uint]uint{69: 5000}},
-	{"subleq_v3.asm", map[uint]uint{61: 5000}},
-	{"switch_v1.asm", map[uint]uint{44: 2255}},
-	{"switch_v2.asm", map[uint]uint{55: 2255}},
+	{"add12_v1.asm", map[int64]int64{11: 4}},
+	{"and_v1.asm", map[int64]int64{22: 4499}},
+	{"tad_v1.asm", map[int64]int64{19: 32}},
+	{"isz_v1.asm", map[int64]int64{28: 9, 30: 24}},
+	{"jsr_v1.asm", map[int64]int64{9: 50}},
+	{"loopuntil_v1.asm", map[int64]int64{15: 5000}},
+	// TODO: Reimplement subleq_v1?
+	//{"subleq_v1.asm", map[int64]int64{101: 5000}},
+	{"subleq_v2.asm", map[int64]int64{90: 5000}},
+	{"subleq_v3.asm", map[int64]int64{79: 5000}},
+	// TODO: Reimplement switch_v1?
+	//{"switch_v1.asm", map[int64]int64{44: 2255}},
+	{"switch_v2.asm", map[int64]int64{78: 2255}},
 }
 
 func TestRun(t *testing.T) {

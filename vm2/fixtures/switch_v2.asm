@@ -10,7 +10,7 @@ loop:       MOV     switchTable tableLoc
 decCnt:     DJNZ    cnt loop
             HLT     ok 0
 
-switchTable: 14    ; TODO: Allow switchTable or similar here
+switchTable: 21    ; TODO: Allow switchTable or similar here
 case0
 case1
 case2

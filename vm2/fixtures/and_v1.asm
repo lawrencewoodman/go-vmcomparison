@@ -6,7 +6,7 @@
         OR      maskl tmp
         AND     tmp lac
         HLT     ok 0
-memBase: 12
+memBase: 18
 opAddr:  7
 memLoc:  0
 maskl:   4096    ; 0o10000
