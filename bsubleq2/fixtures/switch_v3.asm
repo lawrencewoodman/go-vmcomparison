@@ -26,16 +26,6 @@ decCnt:     ; DJNZ    cnt loop
 done:       ; HLT
             lm1 1000
 
-// TODO: be able to put here or switchTable here not rely on done+3
-mswitchTable: -39
-0-case0
-0-case1
-0-case2
-0-case3
-0-case4
-0-case5
-0-case6
-0-case7       
 
 switch:
 case0:      ; ADD     l11 lac
@@ -78,9 +68,11 @@ case7:      ; ADD     l1001 lac
             ; JMP     decCnt
             z z decCnt
 
+.data
+; NOTE: can't use first location of data as indirect because -0 == 0
+lac:     3
 tableLoc: 0
 caseLoc: 0
-lac:     3
 ok:      0
 z:       0
 cnt:     0
@@ -95,3 +87,14 @@ lm123:   -123
 lm367:   -367
 lm592:   -592
 lm1001:  -1001
+
+// TODO: be able to put here or switchTable here not rely on done+3
+mswitchTable: 0-17
+0-case0
+0-case1
+0-case2
+0-case3
+0-case4
+0-case5
+0-case6
+0-case7       

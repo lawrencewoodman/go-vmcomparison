@@ -24,10 +24,12 @@ const memSize = 32000
 const hltLoc = 1000
 
 type SUBLEQ struct {
-	mem     [memSize]*big.Int   // Memory
-	pc      int64               // Program Counter
-	hltVal  *big.Int            // A value returned by HLT
-	symbols map[string]*big.Int // The symbols table from the assembler - added because of difficulty debugging
+	code        [memSize]int64    // Code / Program
+	mem         [memSize]*big.Int // Memory
+	pc          int64             // Program Counter
+	hltVal      *big.Int          // A value returned by HLT
+	codeSymbols map[string]int64  // The code symbols table from the assembler - to aid debugging
+	dataSymbols map[string]int64  // The data symbols table from the assembler - to aid debugging
 }
 
 func New() *SUBLEQ {
@@ -59,41 +61,39 @@ func (v *SUBLEQ) Run() error {
 	return nil
 }
 
-func (v *SUBLEQ) LoadRoutine(routine []*big.Int, symbols map[string]*big.Int) {
+func (v *SUBLEQ) LoadRoutine(code []int64, data []*big.Int, codeSymbols map[string]int64, dataSymbols map[string]int64) {
 	// Need to copy the individual data points of the routine because they are pointers
-	for i, d := range routine {
+	for i, d := range data {
 		v.mem[i].Set(d)
 	}
-	v.symbols = symbols
+	copy(v.code[:], code)
+	v.codeSymbols = codeSymbols
+	v.dataSymbols = dataSymbols
 }
 
 // getOperand returns the operand as supplied unless it is negative in which
 // case it returns the value at the location in memory pointed to by the
 // operand
-func (v *SUBLEQ) getOperand(operand *big.Int) (int64, error) {
-	if !operand.IsInt64() {
-		return 0, fmt.Errorf("PC: %d, outside memory range", v.pc)
-	}
-	addr := operand.Int64()
-	if addr < 0 {
-		addr = 0 - addr
-		if addr >= memSize {
-			return 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, addr)
+func (v *SUBLEQ) getOperand(operand int64) (int64, error) {
+	if operand < 0 {
+		operand = -operand
+		if operand >= memSize {
+			return 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operand)
 		}
-		iaddr := v.mem[addr]
-		if !iaddr.IsInt64() {
+		ioperand := v.mem[operand]
+		if !ioperand.IsInt64() {
 			return 0, fmt.Errorf("PC: %d, outside memory range", v.pc)
 		}
-		addr = iaddr.Int64()
-		if addr < 0 {
+		operand = ioperand.Int64()
+		if operand < 0 {
 			return 0, fmt.Errorf("PC: %d, double indirect not supported", v.pc)
 		}
 	}
-	if addr >= memSize {
-		return 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, addr)
+	if operand >= memSize {
+		return 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operand)
 	}
 
-	return addr, nil
+	return operand, nil
 }
 
 // fetch gets the next instruction from memory
@@ -105,9 +105,9 @@ func (v *SUBLEQ) fetch() (int64, int64, int64, error) {
 	if v.pc+2 >= memSize {
 		return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, v.pc)
 	}
-	operandA := v.mem[v.pc]
-	operandB := v.mem[v.pc+1]
-	operandC := v.mem[v.pc+2]
+	operandA := v.code[v.pc]
+	operandB := v.code[v.pc+1]
+	operandC := v.code[v.pc+2]
 
 	a, err = v.getOperand(operandA)
 	if err != nil {
@@ -125,10 +125,18 @@ func (v *SUBLEQ) fetch() (int64, int64, int64, error) {
 	return a, b, c, nil
 }
 
-func (v *SUBLEQ) addr2symbol(addr *big.Int) string {
-	for s, a := range v.symbols {
-		if a.Cmp(addr) == 0 {
-			return s
+func (v *SUBLEQ) addr2symbol(addr int64, onlyCode ...bool) string {
+	if len(onlyCode) == 0 {
+		for k, v := range v.dataSymbols {
+			if v == addr {
+				return k
+			}
+		}
+	}
+
+	for k, v := range v.codeSymbols {
+		if v == addr {
+			return k
 		}
 	}
 	return fmt.Sprintf("%d", addr)
@@ -137,10 +145,10 @@ func (v *SUBLEQ) addr2symbol(addr *big.Int) string {
 // execute executes the supplied instruction
 // Returns: hlt, error
 func (v *SUBLEQ) execute(operandA int64, operandB int64, operandC int64) bool {
-	//fmt.Printf("PC: %7s    SUBLEQ %s, %s, %s\n", v.addr2symbol(big.NewInt(v.pc)), v.addr2symbol(operandA), v.addr2symbol(operandB), v.addr2symbol(operandC))
-	//fmt.Printf("                      %d - %d = ", v.mem[operandB.Int64()], v.mem[operandA.Int64()])
+	//fmt.Printf("PC: %7s    SUBLEQ %s, %s, %s\n", v.addr2symbol(v.pc, true), v.addr2symbol(operandA), v.addr2symbol(operandB), v.addr2symbol(operandC))
+	//fmt.Printf("                      %d - %d = ", v.mem[operandB], v.mem[operandA])
 	v.mem[operandB].Sub(v.mem[operandB], v.mem[operandA])
-	//fmt.Printf("%d\n", v.mem[operandB.Int64()])
+	//fmt.Printf("%d\n", v.mem[operandB])
 	if operandB == hltLoc {
 		v.hltVal = v.mem[operandB]
 		return true

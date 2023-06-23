@@ -54,13 +54,14 @@ pcresl4096:     ; Restore l4096
 done:           ; HLT
                 lm1 1000
 
+.data
 z:      0
 t:      0
 l4096:  4096
 l4096c: 4096    ; Used because l4096 temporarily gets corrupted
 lm1:    -1
 lm4096: -4096
-memBase: 72
+memBase: 6
 opAddr:  4
 memLoc:  0
 pc:      9

@@ -12,7 +12,8 @@ loop:
 
         ; HLT
 done:   lm1 1000
-        
+
+.data
 z:      0
 cnt:    0
 sum:    0

@@ -46,45 +46,70 @@ var reInstr2 = regexp.MustCompile(`^\s*([\[\]0-9a-zA-Z\-\+]+)\s+([\[\]0-9a-zA-Z\
 var reInstr3 = regexp.MustCompile(`^\s*([\[\]0-9a-zA-Z\-\+]+)\s+([\[\]0-9a-zA-Z\-\+]+)\s+([\[\]0-9a-zA-Z\-\+]+)`)
 var reLiteral = regexp.MustCompile(`^\s*([\-]?[0-9]+).*`)
 var reExpr = regexp.MustCompile(`^\s*([0-9a-zA-z]+)([\-\+])([0-9a-zA-Z]+)`)
+var reDirective = regexp.MustCompile(`^\.([a-zA-Z]+)$`)
 var reIndirect = regexp.MustCompile(`^\s*(\[([0-9a-zA-z\-\+]+)\])`)
 
 // Build symbol table
-func pass1(srcLines []string) map[string]*big.Int {
-	var pos int64 = 0
-	symbols := make(map[string]*big.Int, 0)
+func pass1(srcLines []string) (map[string]int64, map[string]int64) {
+	symbolType := "c"
+	var memPos int64 = 0
+	var progPos int64 = 0
+	codeSymbols := make(map[string]int64, 0)
+	dataSymbols := make(map[string]int64, 0)
 	for _, line := range srcLines {
+		// If there is a directive
+		if reDirective.MatchString(line) {
+			directive := reDirective.FindStringSubmatch(line)[1]
+			if directive == "data" {
+				symbolType = "d"
+			} else {
+				panic(fmt.Sprintf("unknown directive: .%s", directive))
+			}
+		}
 		// If there is a label
 		if reLabel.MatchString(line) {
 			label := reLabel.FindStringSubmatch(line)[1]
 			matchIndices := reLabel.FindStringSubmatchIndex(line)
-			_, labelExists := symbols[label]
-			if labelExists {
-				panic(fmt.Sprintf("label already exists: %s", label))
+			if symbolType == "c" {
+				codeSymbols[label] = progPos
+			} else {
+				dataSymbols[label] = memPos
 			}
-			symbols[label] = big.NewInt(pos)
 			line = line[matchIndices[1]:]
 		}
 		if reInstr3.MatchString(line) || reInstr2.MatchString(line) {
 			// If there is an instruction
-			pos += 3
+			progPos += 3
 		} else if reExpr.MatchString(line) {
 			// If there is an expression
-			pos++
+			memPos++
 		} else if reLiteral.MatchString(line) {
 			// If there is a literal value
-			pos++
+			memPos++
 		}
 
 	}
-	return symbols
+	return codeSymbols, dataSymbols
 }
 
-func pass2(srcLines []string, symbols map[string]*big.Int) []*big.Int {
-	pos := 0
+func pass2(srcLines []string, codeSymbols, dataSymbols map[string]int64) ([]int64, []*big.Int) {
+	outputType := "c"
+	code := make([]int64, 0)
+	data := make([]*big.Int, 0)
+	codePos := 0
 	lineNum := 0
-	code := make([]*big.Int, 0)
 	for _, line := range srcLines {
 		lineNum++
+		//fmt.Printf("%d: %s\n", lineNum, line)
+		// If there is a directive
+		if reDirective.MatchString(line) {
+			directive := reDirective.FindStringSubmatch(line)[1]
+			if directive == "data" {
+				outputType = "d"
+			} else {
+				panic(fmt.Sprintf("unknown directive: .%s", directive))
+			}
+		}
 		// If there is a label
 		if reLabel.MatchString(line) {
 			// Remove from line
@@ -101,27 +126,30 @@ func pass2(srcLines []string, symbols map[string]*big.Int) []*big.Int {
 			if len(line) > 0 {
 				panic(fmt.Sprintf("remaining line: %s", line))
 			}
-			code = append(code, asmInstr(symbols, operandA, operandB, operandC)...)
-			pos += 3
+			code = append(code, asmInstr(codeSymbols, dataSymbols, operandA, operandB, operandC)...)
+			codePos += 3
 		} else if reInstr2.MatchString(line) {
 			// If there is a 2 operand instruction
 			operandA := reInstr2.FindStringSubmatch(line)[1]
 			operandB := reInstr2.FindStringSubmatch(line)[2]
-			operandC := strconv.Itoa(pos + 3)
+			operandC := strconv.Itoa(codePos + 3)
 			matchIndices := reInstr2.FindStringSubmatchIndex(line)
 			line = line[matchIndices[5]:]
 			if len(line) > 0 {
 				panic(fmt.Sprintf("line number: %d, remaining line: %s", lineNum, line))
 			}
-			code = append(code, asmInstr(symbols, operandA, operandB, operandC)...)
-			pos += 3
+			code = append(code, asmInstr(codeSymbols, dataSymbols, operandA, operandB, operandC)...)
+			codePos += 3
 		} else if reExpr.MatchString(line) {
 			// If there is an expression
 			a := reExpr.FindStringSubmatch(line)[1]
 			op := reExpr.FindStringSubmatch(line)[2]
 			b := reExpr.FindStringSubmatch(line)[3]
-			code = append(code, resolveExpr(symbols, a, op, b))
-			pos++
+			if outputType == "d" {
+				data = append(data, big.NewInt(resolveExpr(codeSymbols, dataSymbols, a, op, b)))
+			} else {
+				panic("expression shouldn't appear here")
+			}
 		} else if reLiteral.MatchString(line) {
 			// If there is a literal value
 			lit := reLiteral.FindStringSubmatch(line)[1]
@@ -129,59 +157,72 @@ func pass2(srcLines []string, symbols map[string]*big.Int) []*big.Int {
 			if !ok {
 				panic("can't create literal value")
 			}
-			code = append(code, num)
-			pos++
+			if outputType == "d" {
+				data = append(data, num)
+			} else {
+				panic("literal shouldn't appear here")
+			}
 		}
 
 	}
-	return code
+	return code, data
 }
 
-func resolveOperand(symbols map[string]*big.Int, operand string) *big.Int {
+func resolveSymbol(codeSymbols, dataSymbols map[string]int64, sym string) (int64, error) {
+	v, ok := codeSymbols[sym]
+	if !ok {
+		v, ok = dataSymbols[sym]
+		if !ok {
+			return v, fmt.Errorf("unknown symbol: %s", sym)
+		}
+	}
+	return v, nil
+
+}
+
+func resolveOperand(codeSymbols, dataSymbols map[string]int64, operand string) int64 {
 	if reIndirect.MatchString(operand) {
 		s := reIndirect.FindStringSubmatch(operand)[2]
-		res := big.NewInt(0)
-		return res.Sub(res, resolveOperand(symbols, s))
+		return -resolveOperand(codeSymbols, dataSymbols, s)
 	} else if reExpr.MatchString(operand) {
 		// If operand is an expression
 		a := reExpr.FindStringSubmatch(operand)[1]
 		op := reExpr.FindStringSubmatch(operand)[2]
 		b := reExpr.FindStringSubmatch(operand)[3]
-		return resolveExpr(symbols, a, op, b)
+		return resolveExpr(codeSymbols, dataSymbols, a, op, b)
 	} else if reLiteral.MatchString(operand) {
 		// If operand is a literal value
-		num, ok := new(big.Int).SetString(operand, 10)
-		if !ok {
-			panic("can't create literal value")
+		addr, err := strconv.ParseInt(operand, 10, 64)
+		if err != nil {
+			panic(err)
 		}
-		return num
+		return addr
 	}
-	v, ok := symbols[operand]
-	if !ok {
-		panic(fmt.Sprintf("unknown operand: %s", operand))
+	addr, err := resolveSymbol(codeSymbols, dataSymbols, operand)
+	if err != nil {
+		panic(err)
 	}
-	return v
+	return addr
 }
 
-func resolveExpr(symbols map[string]*big.Int, a, op, b string) *big.Int {
-	res := big.NewInt(0)
-	aVal := resolveOperand(symbols, a)
-	bVal := resolveOperand(symbols, b)
+func resolveExpr(codeSymbols, dataSymbols map[string]int64, a, op, b string) int64 {
+	aVal := resolveOperand(codeSymbols, dataSymbols, a)
+	bVal := resolveOperand(codeSymbols, dataSymbols, b)
 	switch op {
 	case "+":
-		return res.Add(aVal, bVal)
+		return aVal + bVal
 	case "-":
-		return res.Sub(aVal, bVal)
+		return aVal - bVal
 	default:
 		panic(fmt.Sprintf("unknown op: %s", op))
 	}
 }
 
-func asmInstr(symbols map[string]*big.Int, operandA string, operandB string, operandC string) []*big.Int {
-	code := []*big.Int{
-		resolveOperand(symbols, operandA),
-		resolveOperand(symbols, operandB),
-		resolveOperand(symbols, operandC),
+func asmInstr(codeSymbols, dataSymbols map[string]int64, operandA string, operandB string, operandC string) []int64 {
+	code := []int64{
+		resolveOperand(codeSymbols, dataSymbols, operandA),
+		resolveOperand(codeSymbols, dataSymbols, operandB),
+		resolveOperand(codeSymbols, dataSymbols, operandC),
 	}
 	return code
 }
@@ -200,14 +241,14 @@ func printSymbols(symbols map[string]*big.Int) {
 	fmt.Printf("\n")
 }
 
-func asm(filename string) ([]*big.Int, map[string]*big.Int, error) {
+func asm(filename string) ([]int64, []*big.Int, map[string]int64, map[string]int64, error) {
 	srcLines, err := readFile(filename)
 	if err != nil {
-		return []*big.Int{}, map[string]*big.Int{}, err
+		return []int64{}, []*big.Int{}, map[string]int64{}, map[string]int64{}, err
 	}
-	symbols := pass1(srcLines)
-	code := pass2(srcLines, symbols)
+	codeSymbols, dataSymbols := pass1(srcLines)
+	code, data := pass2(srcLines, codeSymbols, dataSymbols)
 	//printSymbols(symbols)
 	//fmt.Printf("%v\n", code)
-	return code, symbols, nil
+	return code, data, codeSymbols, dataSymbols, nil
 }

@@ -29,13 +29,14 @@ done:           ; Restore l8192
                 ; HLT
                 lm1 1000
 
+.data
 z:      0
 l8192:  8192
 l8192c: 8192    ; Used because l8192 gets temporarily corrupted
 lm1:    -1
 lm8192: -8192
 
-mmemBase: 0-41  ; TODO: be able to put memBase or similar here
+mmemBase: 0-5  ; TODO: be able to put memBase or similar here
 mopAddr:  0-4
 memLoc:  0
 lac:     9

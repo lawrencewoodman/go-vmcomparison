@@ -53,6 +53,7 @@ halt:   [memB] z
         z z
         lm1 1000
 
+.data
 lm1:    -1
 lm3:    -3
 lm1000: -1000

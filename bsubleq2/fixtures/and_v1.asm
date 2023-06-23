@@ -40,37 +40,12 @@ andit:          andMask andMask
                 ; HLT
 done:           lm1 1000
 
-z:      0
-lm1:    -1
-lmdone: 0-done
-lmandit: 0-andit
-
-cnt:      0
-memLoc:   0
-mtmp:     0-tmp
-mmemBase: 0-73   ; TODO: be able to put memBase or similar here
-mopAddr:  0-4
-lac:      4503
-tmp:      0
-val:      3003
-
-res:    0
-m:      0
-lhbitval:   8192
-lhbitvalc:  8192
-l13:        13
-lmhbitval: -8192
-mmask13:   -8191    ; -0o17777
-mmaskl:    -4096    ; -0o10000
-
                 ;--------------------------
                 ; AND lac
                 ; andMask contains value
                 ; to mask with
                 ;--------------------------
 
-andMask:        0
-and13ret:       0
 and13:          ; Zero res
                 res res
 
@@ -150,9 +125,6 @@ acont:          ; andMask << 2
                 ; orBLoc
                 ;------------------------------
 
-orA:            0
-orBLoc:         0
-or13ret:        0
 or13:           ; Zero res
                 res res
 
@@ -228,3 +200,34 @@ ocont:          ; orA << 2
                 ;------------
                 ; End of OR
                 ;------------
+
+.data
+z:      0
+lm1:    -1
+lmdone: 0-done
+lmandit: 0-andit
+
+cnt:      0
+memLoc:   0
+mtmp:     0-tmp
+mmemBase: 0-7   ; TODO: be able to put memBase or similar here
+mopAddr:  0-4
+lac:      4503
+tmp:      0
+val:      3003
+
+res:    0
+m:      0
+lhbitval:   8192
+lhbitvalc:  8192
+l13:        13
+lmhbitval: -8192
+mmask13:   -8191    ; -0o17777
+mmaskl:    -4096    ; -0o10000
+
+andMask:        0
+and13ret:       0
+
+orA:            0
+orBLoc:         0
+or13ret:        0

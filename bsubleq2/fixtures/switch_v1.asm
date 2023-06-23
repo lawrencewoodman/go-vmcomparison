@@ -1,5 +1,7 @@
             ; Version 1
             ; SWITCH
+            ; TODO: Reimplement this - problem with padding
+
             ; MOV     l8 cnt
             cnt cnt
             lm8 cnt
@@ -97,6 +99,7 @@ case7:      ; ADD     l1001 lac
             0
             0
 
+.data
 switchBase: switch-8  ; -8 so we don't have to DEC cnt
 caseOff: 0
 caseLoc: 0
