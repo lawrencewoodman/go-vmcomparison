@@ -23,10 +23,10 @@ const memSize = 32000
 const hltLoc = 1000
 
 type SUBLEQ struct {
-	mem     [memSize]int   // Memory
-	pc      int            // Program Counter
-	hltVal  int            // A value returned by HLT
-	symbols map[string]int // The symbols table from the assembler - added because of difficulty debugging
+	mem     [memSize]int64   // Memory
+	pc      int64            // Program Counter
+	hltVal  int64            // A value returned by HLT
+	symbols map[string]int64 // The symbols table from the assembler - added because of difficulty debugging
 }
 
 func New() *SUBLEQ {
@@ -53,7 +53,7 @@ func (v *SUBLEQ) Run() error {
 	return nil
 }
 
-func (v *SUBLEQ) LoadRoutine(routine []int, symbols map[string]int) {
+func (v *SUBLEQ) LoadRoutine(routine []int64, symbols map[string]int64) {
 	copy(v.mem[:], routine)
 	v.symbols = symbols
 }
@@ -61,7 +61,7 @@ func (v *SUBLEQ) LoadRoutine(routine []int, symbols map[string]int) {
 // getOperand returns the operand as supplied unless it is negative in which
 // case it returns the value at the location in memory pointed to by the
 // operand
-func (v *SUBLEQ) getOperand(operand int) (int, error) {
+func (v *SUBLEQ) getOperand(operand int64) (int64, error) {
 	if operand < 0 {
 		operand = 0 - operand
 		if operand >= memSize {
@@ -81,7 +81,7 @@ func (v *SUBLEQ) getOperand(operand int) (int, error) {
 
 // fetch gets the next instruction from memory
 // Returns: A, B, C, error
-func (v *SUBLEQ) fetch() (int, int, int, error) {
+func (v *SUBLEQ) fetch() (int64, int64, int64, error) {
 	var err error
 
 	if v.pc+2 >= memSize {
@@ -107,13 +107,7 @@ func (v *SUBLEQ) fetch() (int, int, int, error) {
 	return operandA, operandB, operandC, nil
 }
 
-// Maintain 32 bits
-// Used rather than basing on int32 to maintain parity across other language platforms
-func maintain32(n int) int {
-	return int(int32(n))
-}
-
-func (v *SUBLEQ) addr2symbol(addr int) string {
+func (v *SUBLEQ) addr2symbol(addr int64) string {
 	for k, v := range v.symbols {
 		if v == addr {
 			return k
@@ -124,10 +118,10 @@ func (v *SUBLEQ) addr2symbol(addr int) string {
 
 // execute executes the supplied instruction
 // Returns: hlt, error
-func (v *SUBLEQ) execute(operandA int, operandB int, operandC int) bool {
+func (v *SUBLEQ) execute(operandA int64, operandB int64, operandC int64) bool {
 	//fmt.Printf("PC: %7s    SUBLEQ %s, %s, %s\n", v.addr2symbol(v.pc), v.addr2symbol(operandA), v.addr2symbol(operandB), v.addr2symbol(operandC))
 	//fmt.Printf("                      %d - %d = ", v.mem[operandB], v.mem[operandA])
-	v.mem[operandB] = maintain32(v.mem[operandB] - v.mem[operandA])
+	v.mem[operandB] = v.mem[operandB] - v.mem[operandA]
 	//fmt.Printf("%d\n", v.mem[operandB])
 	if operandB == hltLoc {
 		v.hltVal = v.mem[operandB]

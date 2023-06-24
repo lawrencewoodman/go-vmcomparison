@@ -48,9 +48,9 @@ var reExpr = regexp.MustCompile(`^\s*([0-9a-zA-z]+)([\-\+])([0-9a-zA-Z]+)`)
 var reIndirect = regexp.MustCompile(`^\s*(\[([0-9a-zA-z\-\+]+)\])`)
 
 // Build symbol table
-func pass1(srcLines []string) map[string]int {
-	pos := 0
-	symbols := make(map[string]int, 0)
+func pass1(srcLines []string) map[string]int64 {
+	var pos int64 = 0
+	symbols := make(map[string]int64, 0)
 	for _, line := range srcLines {
 		// If there is a label
 		if reLabel.MatchString(line) {
@@ -78,10 +78,10 @@ func pass1(srcLines []string) map[string]int {
 	return symbols
 }
 
-func pass2(srcLines []string, symbols map[string]int) []int {
+func pass2(srcLines []string, symbols map[string]int64) []int64 {
 	pos := 0
 	lineNum := 0
-	code := make([]int, 0)
+	code := make([]int64, 0)
 	for _, line := range srcLines {
 		lineNum++
 		// If there is a label
@@ -128,7 +128,7 @@ func pass2(srcLines []string, symbols map[string]int) []int {
 			if err != nil {
 				panic(err)
 			}
-			code = append(code, int(i64))
+			code = append(code, i64)
 			pos++
 		}
 
@@ -136,7 +136,7 @@ func pass2(srcLines []string, symbols map[string]int) []int {
 	return code
 }
 
-func resolveOperand(symbols map[string]int, operand string) int {
+func resolveOperand(symbols map[string]int64, operand string) int64 {
 	if reIndirect.MatchString(operand) {
 		s := reIndirect.FindStringSubmatch(operand)[2]
 		return 0 - resolveOperand(symbols, s)
@@ -148,11 +148,11 @@ func resolveOperand(symbols map[string]int, operand string) int {
 		return resolveExpr(symbols, a, op, b)
 	} else if reLiteral.MatchString(operand) {
 		// If operand is a literal value
-		i64, err := strconv.ParseUint(operand, 10, 64)
+		i64, err := strconv.ParseInt(operand, 10, 64)
 		if err != nil {
 			panic(err)
 		}
-		return int(i64)
+		return i64
 	}
 	v, ok := symbols[operand]
 	if !ok {
@@ -161,7 +161,7 @@ func resolveOperand(symbols map[string]int, operand string) int {
 	return v
 }
 
-func resolveExpr(symbols map[string]int, a, op, b string) int {
+func resolveExpr(symbols map[string]int64, a, op, b string) int64 {
 	aVal := resolveOperand(symbols, a)
 	bVal := resolveOperand(symbols, b)
 	switch op {
@@ -174,8 +174,8 @@ func resolveExpr(symbols map[string]int, a, op, b string) int {
 	}
 }
 
-func asmInstr(symbols map[string]int, operandA string, operandB string, operandC string) []int {
-	code := []int{
+func asmInstr(symbols map[string]int64, operandA string, operandB string, operandC string) []int64 {
+	code := []int64{
 		resolveOperand(symbols, operandA),
 		resolveOperand(symbols, operandB),
 		resolveOperand(symbols, operandC),
@@ -183,7 +183,7 @@ func asmInstr(symbols map[string]int, operandA string, operandB string, operandC
 	return code
 }
 
-func printSymbols(symbols map[string]int) {
+func printSymbols(symbols map[string]int64) {
 	labels := make([]string, 0, len(symbols))
 	for l := range symbols {
 		labels = append(labels, l)
@@ -197,10 +197,10 @@ func printSymbols(symbols map[string]int) {
 	fmt.Printf("\n")
 }
 
-func asm(filename string) ([]int, map[string]int, error) {
+func asm(filename string) ([]int64, map[string]int64, error) {
 	srcLines, err := readFile(filename)
 	if err != nil {
-		return []int{}, map[string]int{}, err
+		return []int64{}, map[string]int64{}, err
 	}
 	symbols := pass1(srcLines)
 	code := pass2(srcLines, symbols)
