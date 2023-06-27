@@ -8,7 +8,7 @@
          AND     mask13
          STA     lac
 done:    HLT     ok
-memBase: 8
+memBase: 16
 opAddr:  6
 memLoc:  0
 mask13:  8191    ; 0o17777

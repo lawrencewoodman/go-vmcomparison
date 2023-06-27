@@ -2,21 +2,36 @@
         ; SUBLEQ emulator
 
         ; Fetch operands
-fetch:  LDA II memBase,pc
-        STA     opA
-        INC     pc
-        LDA II memBase,pc
+fetch:  LDA     memBase
+        ADD     pc
+        STA     memLoc
+
+        ; A
+        LDA I   memLoc
+        ADD     memBase
+        STA     memA
+        INC     memLoc
+
+        ; B
+        LDA I   memLoc
         STA     opB
-        INC     pc
-        LDA II memBase,pc
+        ADD     memBase
+        STA     memB
+        INC     memLoc
+
+        ; C
+        LDA I   memLoc
         STA     opC
-        INC     pc
+
+        LDA     pc
+        ADD     l3
+        STA     pc
 
 
         ; Execute
-exec:   LDA II  memBase,opB
-        SUB II  memBase,opA
-        STA II  memBase,opB
+exec:   LDA I   memB
+        SUB I   memA
+        STA I   memB
 
         ; If opB == 1000 THEN halt
         LDA     l1000
@@ -24,7 +39,7 @@ exec:   LDA II  memBase,opB
         JEQ     halt
 
         ; IF mem[opB] > 0 THEN jump to fetch
-        LDA II  memBase,opB
+        LDA I   memB
         JGT     fetch
 
         ; ELSE jump to opC
@@ -33,16 +48,19 @@ jmpC:   LDA     opC
         JMP     fetch
 
 
-halt:   LDA II  memBase,opB
+halt:   LDA I   memB
         STA     hltVal
         HLT     ok
 
 
+l3:      3
 l1000:   1000
 pc:      0
 hltVal:  0
 memBase: program
-opA:     0
+memLoc:  0
+memA:    0
+memB:    0
 opB:     0
 opC:     0
 ok:      0

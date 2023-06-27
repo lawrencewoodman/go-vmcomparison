@@ -1,11 +1,16 @@
         ; Version 1
         ; PDP-8 AND
-        LDA II  memBase,opAddr
+        LDA     memBase
+        ADD     opAddr
+        STA     memLoc
+        LDA I   memLoc
         OR      maskl
         AND     lac
         STA     lac
         HLT     ok
-memBase: 5
+
+memLoc:  0        
+memBase: 17
 opAddr:  6
 memLoc:  0
 maskl:   4096    ; 0o10000

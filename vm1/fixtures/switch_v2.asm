@@ -1,16 +1,19 @@
-          ; Version 2
-          ; SWITCH
-          ; Using a table
-          LDA     l8
-          STA     cnt
-loop:     LDA II  switchTable,cnt
-          STA     caseLoc
-          JMP I   caseLoc
-decCnt:   DSZ     cnt
-          JMP     loop
-          HLT     ok
+        ; Version 2
+        ; SWITCH
+        ; Using a table
+        LDA     l8
+        STA     cnt
+loop:   LDA     cnt
+        ADD     switchTable
+        STA     switchLoc
+        LDA I   switchLoc
+        STA     caseLoc
+        JMP I   caseLoc
+decCnt: DSZ     cnt
+        JMP     loop
+        HLT     ok
 
-switchTable: 8    ; TODO: Allow switchTable or similar here
+switchTable: 22    ; TODO: Allow switchTable or similar here
 case0
 case1
 case2
@@ -61,6 +64,7 @@ case7:    LDA     lac
           STA     lac
           JMP     decCnt
 
+switchLoc: 0
 caseLoc: 0
 lac:     3
 ok:      0

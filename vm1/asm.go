@@ -11,34 +11,33 @@ package vm1
 import (
 	"bufio"
 	"fmt"
-	"math"
 	"os"
 	"regexp"
 	"strconv"
 )
 
-var instructions = map[string]uint{
-	"HLT":   0 << 24,
-	"LDA":   1 << 24,
-	"STA":   2 << 24,
-	"ADD":   3 << 24,
-	"SUB":   4 << 24,
-	"AND":   5 << 24,
-	"INC":   6 << 24,
-	"JNZ":   7 << 24,
-	"DSZ":   8 << 24,
-	"JMP":   9 << 24,
-	"SHL":   10 << 24,
-	"LDX":   11 << 24,
-	"LDY":   12 << 24,
-	"DYJNZ": 13 << 24,
-	"JSR":   14 << 24,
-	"RET":   15 << 24,
-	"TAY":   16 << 24,
-	"STY":   17 << 24,
-	"OR":    18 << 24,
-	"JEQ":   19 << 24,
-	"JGT":   20 << 24,
+var instructions = map[string]int64{
+	"HLT":   0,
+	"LDA":   1,
+	"STA":   2,
+	"ADD":   3,
+	"SUB":   4,
+	"AND":   5,
+	"INC":   6,
+	"JNZ":   7,
+	"DSZ":   8,
+	"JMP":   9,
+	"SHL":   10,
+	"LDX":   11,
+	"LDY":   12,
+	"DYJNZ": 13,
+	"JSR":   14,
+	"RET":   15,
+	"TAY":   16,
+	"STY":   17,
+	"OR":    18,
+	"JEQ":   19,
+	"JGT":   20,
 }
 
 func readFile(filename string) ([]string, error) {
@@ -68,14 +67,14 @@ var reLabel = regexp.MustCompile(`^\s*([a-zA-Z]+[0-9a-zA-Z]*):`)
 var reInstr = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]+)\s+`)
 var reAddrMode = regexp.MustCompile(`^\s*([iI]{1,2})\s+`)
 var reOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z,]+).*`)
-var reLiteral = regexp.MustCompile(`^\s*([\-]?)([0-9]+).*`)
+var reLiteral = regexp.MustCompile(`^\s*([\-]?[0-9]+).*`)
 var reSymbol = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]*).*`)
 var reIndexOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z]+),([0-9a-zA-z]+).*`)
 
 // Build symbol table
-func pass1(srcLines []string) map[string]uint {
-	var pos uint = 0
-	symbols := make(map[string]uint, 0)
+func pass1(srcLines []string) map[string]int64 {
+	var pos int64 = 0
+	symbols := make(map[string]int64, 0)
 	for _, line := range srcLines {
 		// If there is a label
 		if reLabel.MatchString(line) {
@@ -87,7 +86,7 @@ func pass1(srcLines []string) map[string]uint {
 
 		// If there is an instruction
 		if reInstr.MatchString(line) {
-			pos++
+			pos += 2
 		} else if reLiteral.MatchString(line) {
 			// If there is a literal value
 			pos++
@@ -99,8 +98,8 @@ func pass1(srcLines []string) map[string]uint {
 	return symbols
 }
 
-func pass2(srcLines []string, symbols map[string]uint) []uint {
-	code := make([]uint, 0)
+func pass2(srcLines []string, symbols map[string]int64) []int64 {
+	code := make([]int64, 0)
 	for lineNum, line := range srcLines {
 		// If there is a label
 		if reLabel.MatchString(line) {
@@ -138,7 +137,7 @@ func pass2(srcLines []string, symbols map[string]uint) []uint {
 			if len(line) > 0 {
 				panic(fmt.Sprintf("%d: remaining line: %s", lineNum, line))
 			}
-			code = append(code, asmInstr(symbols, instr, addrMode, operand))
+			code = append(code, asmInstr(symbols, instr, addrMode, operand)...)
 
 		} else if reSymbol.MatchString(line) {
 			// If there is a symbol
@@ -152,29 +151,25 @@ func pass2(srcLines []string, symbols map[string]uint) []uint {
 
 		} else if reLiteral.MatchString(line) {
 			// If there is a literal value
-			sign := reLiteral.FindStringSubmatch(line)[1]
-			lit := reLiteral.FindStringSubmatch(line)[2]
-			ui64, err := strconv.ParseUint(lit, 10, 64)
+			lit := reLiteral.FindStringSubmatch(line)[1]
+			i64, err := strconv.ParseInt(lit, 10, 64)
 			if err != nil {
 				panic(err)
 			}
-			if sign == "-" {
-				ui64 = math.MaxUint64 - (ui64 - 1)
-			}
-			code = append(code, uint(ui64))
+			code = append(code, i64)
 		}
 	}
 	return code
 }
 
-func resolveOperand(symbols map[string]uint, operand string) uint {
+func resolveOperand(symbols map[string]int64, operand string) int64 {
 	// If operand is a literal value
 	if reLiteral.MatchString(operand) {
-		ui64, err := strconv.ParseUint(operand, 10, 64)
+		i64, err := strconv.ParseInt(operand, 10, 64)
 		if err != nil {
 			panic(err)
 		}
-		return uint(ui64)
+		return i64
 		// If operand is an indexed address
 	} else if reIndexOperand.MatchString(operand) {
 		base := reIndexOperand.FindStringSubmatch(operand)[1]
@@ -191,27 +186,25 @@ func resolveOperand(symbols map[string]uint, operand string) uint {
 	return v
 }
 
-func asmInstr(symbols map[string]uint, instr string, addrMode string, operand string) uint {
-	code, ok := instructions[instr]
+func asmInstr(symbols map[string]int64, instr string, addrMode string, operand string) []int64 {
+	opcode, ok := instructions[instr]
 	if !ok {
 		panic(fmt.Sprintf("unknown instruction: %s", instr))
 	}
+
+	opA := resolveOperand(symbols, operand)
+
 	if addrMode == "I" {
-		code |= 0x80 << 24
+		opA = -opA
 	}
-
-	if addrMode == "II" {
-		code |= 0x40 << 24
-	}
-
-	code += resolveOperand(symbols, operand)
+	code := []int64{opcode, opA}
 	return code
 }
 
-func asm(filename string) ([]uint, error) {
+func asm(filename string) ([]int64, error) {
 	srcLines, err := readFile(filename)
 	if err != nil {
-		return []uint{}, err
+		return []int64{}, err
 	}
 	symbols := pass1(srcLines)
 	/*
@@ -221,6 +214,6 @@ func asm(filename string) ([]uint, error) {
 		}
 	*/
 	code := pass2(srcLines, symbols)
-	// fmt.Printf("%v\n", code)
+	//fmt.Printf("%v\n", code)
 	return code, nil
 }

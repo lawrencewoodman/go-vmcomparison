@@ -68,7 +68,7 @@ func (v *VM2) fetch() (int64, int64, int64, error) {
 
 	// If addressing mode: operand A indirect
 	if operandA < 0 {
-		operandA = 0 - operandA
+		operandA = -operandA
 		if operandA >= memSize {
 			return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandA)
 		}

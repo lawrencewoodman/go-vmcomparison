@@ -188,12 +188,12 @@ func asmInstr(symbols map[string]int64, instr string, addrMode string, operandA 
 	switch addrMode {
 	case "":
 	case "I":
-		opA = 0 - opA
+		opA = -opA
 	case "DI":
-		opB = 0 - opB
+		opB = -opB
 	case "II":
-		opA = 0 - opA
-		opB = 0 - opB
+		opA = -opA
+		opB = -opB
 	default:
 		panic(fmt.Sprintf("unknown addressing mode: %s", addrMode))
 	}

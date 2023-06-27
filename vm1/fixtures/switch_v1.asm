@@ -3,10 +3,14 @@
           LDA     l8
           STA     cnt
 loop:     LDA     cnt
-          STA     caseOff
-          SHL     caseOff
-          SHL     caseOff
-          JMP II  switchBase,caseOff
+          STA     caseLoc
+          SHL     caseLoc
+          SHL     caseLoc
+          SHL     caseLoc
+          LDA     caseLoc
+          ADD     switchBase
+          STA     caseLoc
+          JMP I   caseLoc
 decCnt:   DSZ     cnt
           JMP     loop
           HLT     ok
@@ -53,9 +57,9 @@ case7:    LDA     lac
           JMP     decCnt
 
 ; TODO: Implement simple maths
-;switchBase: switch-4  ; -4 so we don't have to DEC cnt
-switchBase: 6  ; -4 so we don't have to DEC cnt
-caseOff: 0
+;switchBase: switch-8  ; -8 so we don't have to DEC cnt
+switchBase: 20  ; -8 so we don't have to DEC cnt
+caseLoc: 0
 lac:     3
 ok:      0
 cnt:     0

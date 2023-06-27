@@ -13,7 +13,7 @@
          AND     mask12
          STA     pc
 done:    HLT     ok
-memBase: 13
+memBase: 26
 opAddr:  6
 memLoc:  0
 mask12:  4095    ; 0o7777
