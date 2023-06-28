@@ -122,7 +122,7 @@ func (v *VMStack) Step() (bool, error) {
 		if addr.Cmp(bmemSize) >= 0 {
 			return false, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, addr)
 		}
-		v.dstack.replace(v.mem[addr.Int64()])
+		addr.Set(v.mem[addr.Int64()])
 		v.pc++
 	case 2 << 24: // STORE (n addr --)
 		addr := v.dstack.pop()
@@ -130,30 +130,26 @@ func (v *VMStack) Step() (bool, error) {
 		if addr.Cmp(bmemSize) >= 0 {
 			return false, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, addr)
 		}
-		v.mem[addr.Int64()] = big.NewInt(0).Set(v.dstack.pop())
+		v.mem[addr.Int64()] = v.dstack.pop()
 		v.pc++
 	case 3 << 24: // ADD
 		a := v.dstack.pop()
 		b := v.dstack.peek()
-		c := big.NewInt(0)
-		c = c.Add(a, b)
-		v.dstack.replace(c)
+		b.Add(a, b)
 		v.pc++
 	case 4 << 24: // SUB (a b -- a-b)
 		b := v.dstack.pop()
 		a := v.dstack.peek()
-		c := big.NewInt(0)
-		c = c.Sub(a, b)
-		v.dstack.replace(c)
+		a.Sub(a, b)
 		v.pc++
 	case 5 << 24: // AND
 		a := v.dstack.pop()
 		b := v.dstack.peek()
-		v.dstack.replace(a.And(a, b))
+		b.And(a, b)
 		v.pc++
 	case 6 << 24: // INC
 		a := v.dstack.peek()
-		v.dstack.replace(a.Add(a, one))
+		a.Add(a, one)
 		v.pc++
 	case 7 << 24: // JNZ (val addr --)
 		addr := v.dstack.pop()
@@ -169,7 +165,7 @@ func (v *VMStack) Step() (bool, error) {
 	case 8 << 24: // DJNZ - (val addr -- val) - Decrement and Jump if not Zero
 		addr := v.dstack.pop()
 		val := v.dstack.peek()
-		v.dstack.replace(val.Sub(val, one))
+		val.Sub(val, one)
 		if val.Sign() != 0 {
 			if !addr.IsInt64() {
 				panic("address is not in64")
@@ -188,7 +184,7 @@ func (v *VMStack) Step() (bool, error) {
 	case 10 << 24: // SHL
 		// TODO: Be able to supply number of bits to shift on stack?
 		a := v.dstack.peek()
-		v.dstack.replace(a.Lsh(a, 1))
+		a.Lsh(a, 1)
 		v.pc++
 	case 11 << 24: // LIT - Put the 24-bit operand on the stack
 		if operand == 0 {
@@ -198,13 +194,10 @@ func (v *VMStack) Step() (bool, error) {
 		// of this function
 		v.pc++
 	case 12 << 24: // DROP - (n --)
-		v.dstack.pop()
+		v.dstack.drop()
 		v.pc++
 	case 13 << 24: // SWAP - (a b -- b a)
-		b := v.dstack.pop()
-		a := v.dstack.peek()
-		v.dstack.replace(b)
-		v.dstack.push(a)
+		v.dstack.swap()
 		v.pc++
 	case 17 << 24: // JSR
 		pc := big.NewInt(v.pc)
@@ -221,12 +214,13 @@ func (v *VMStack) Step() (bool, error) {
 		}
 		v.pc = addr.Int64()
 	case 19 << 24: // DUP
-		v.dstack.push(v.dstack.peek())
+		v.dstack.dup()
+
 		v.pc++
 	case 20 << 24: // OR
 		a := v.dstack.pop()
 		b := v.dstack.peek()
-		v.dstack.replace(a.Or(a, b))
+		b.Or(a, b)
 		v.pc++
 	case 21 << 24: // JZ (val addr --)
 		addr := v.dstack.pop()
@@ -252,18 +246,10 @@ func (v *VMStack) Step() (bool, error) {
 			v.pc++
 		}
 	case 23 << 24: // ROT (a b c -- b c a)
-		c := v.dstack.pop()
-		b := v.dstack.pop()
-		a := v.dstack.peek()
-		v.dstack.replace(b)
-		v.dstack.push(c)
-		v.dstack.push(a)
+		v.dstack.rot()
 		v.pc++
 	case 24 << 24: // OVER (a b -- a b a)
-		b := v.dstack.pop()
-		a := v.dstack.peek()
-		v.dstack.push(b)
-		v.dstack.push(a)
+		v.dstack.over()
 		v.pc++
 	default:
 		panic("unknown opcode")

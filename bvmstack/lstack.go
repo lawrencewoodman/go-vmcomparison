@@ -29,6 +29,8 @@ func (s *LStack) pop() *big.Int {
 
 	if s.sp > 0 {
 		s.sp--
+	} else {
+		panic("stack empty")
 	}
 	return ts
 }
@@ -46,15 +48,72 @@ func (s *LStack) peek() *big.Int {
 	return s.stack[s.sp]
 }
 
+func (s *LStack) drop() {
+	if s.sp > 0 {
+		s.sp--
+	} else {
+		panic("stack empty")
+	}
+}
+
+func (s *LStack) dup() {
+	if s.sp < 7 {
+		s.stack[s.sp+1] = big.NewInt(0).Set(s.stack[s.sp])
+		s.sp++
+	} else {
+		panic("stack full")
+	}
+
+}
+
+func (s *LStack) swap() {
+	if s.sp >= 1 {
+		a := s.stack[s.sp-1]
+		b := s.stack[s.sp]
+		s.stack[s.sp-1] = b
+		s.stack[s.sp] = a
+	} else {
+		panic("stack empty")
+	}
+}
+
+func (s *LStack) over() {
+	if s.sp >= 1 {
+		if s.sp < 7 {
+			a := s.stack[s.sp-1]
+			b := s.stack[s.sp]
+
+			s.stack[s.sp-1] = a
+			s.stack[s.sp] = b
+			s.stack[s.sp+1] = big.NewInt(0).Set(a)
+			s.sp++
+		} else {
+			panic("stack full")
+		}
+	} else {
+		panic("stack empty")
+	}
+}
+
+// rot (a b c -- b c a)
+func (s *LStack) rot() {
+	if s.sp >= 2 {
+		a := s.stack[s.sp-2]
+		b := s.stack[s.sp-1]
+		c := s.stack[s.sp]
+
+		s.stack[s.sp-2] = b
+		s.stack[s.sp-1] = c
+		s.stack[s.sp] = a
+	} else {
+		panic("stack empty")
+	}
+}
+
 // TODO: Just for debugging
 func (s *LStack) nos() string {
 	if s.sp == 0 {
 		return "nil"
 	}
 	return s.stack[s.sp-1].String()
-}
-
-// TODO: check name
-func (s *LStack) replace(n *big.Int) {
-	s.stack[s.sp] = big.NewInt(0).Set(n)
 }
