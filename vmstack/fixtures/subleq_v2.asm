@@ -2,6 +2,9 @@
         ; SUBLEQ emulator
         ; Keep more things on the stack
 
+        LIT 0
+        DROP
+
         ; Fetch operands
 fetch:  FETCH pc
         DUP

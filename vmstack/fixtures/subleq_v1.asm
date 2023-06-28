@@ -1,6 +1,9 @@
         ; Version 1
         ; SUBLEQ emulator
 
+        LIT 0
+        DROP
+        
         ; Fetch operands
 fetch:  FETCH pc
         DUP

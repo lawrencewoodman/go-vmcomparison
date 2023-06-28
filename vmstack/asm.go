@@ -11,13 +11,12 @@ package vmstack
 import (
 	"bufio"
 	"fmt"
-	"math"
 	"os"
 	"regexp"
 	"strconv"
 )
 
-var instructions = map[string]uint{
+var instructions = map[string]int64{
 	"HLT":     0 << 24,
 	"FETCH":   1 << 24,
 	"STORE":   2 << 24,
@@ -71,14 +70,14 @@ func readFile(filename string) ([]string, error) {
 var reLabel = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]*):`)
 var reInstr = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]+)\s*`)
 var reOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z]+)\s*`)
-var reLiteral = regexp.MustCompile(`^\s*([\-]?)([0-9]+)\s*`)
+var reLiteral = regexp.MustCompile(`^\s*([\-]?[0-9]+)\s*`)
 var reSymbol = regexp.MustCompile(`^\s*!([a-zA-Z][0-9a-zA-Z]*).*`)
 var reComment = regexp.MustCompile(`^\s*(;.*)$`)
 
 // Build symbol table
-func pass1(srcLines []string) map[string]uint {
-	var pos uint = 0
-	symbols := make(map[string]uint, 0)
+func pass1(srcLines []string) map[string]int64 {
+	var pos int64 = 0
+	symbols := make(map[string]int64, 0)
 	for _, line := range srcLines {
 		// If there is a label
 		if reLabel.MatchString(line) {
@@ -103,8 +102,8 @@ func pass1(srcLines []string) map[string]uint {
 	return symbols
 }
 
-func pass2(srcLines []string, symbols map[string]uint) []uint {
-	code := make([]uint, 0)
+func pass2(srcLines []string, symbols map[string]int64) []int64 {
+	code := make([]int64, 0)
 	for _, line := range srcLines {
 		// If there is a label
 		if reLabel.MatchString(line) {
@@ -136,16 +135,13 @@ func pass2(srcLines []string, symbols map[string]uint) []uint {
 			code = append(code, asmInstr(symbols, instr, operand))
 		} else if reLiteral.MatchString(line) {
 			// If there is a literal value
-			sign := reLiteral.FindStringSubmatch(line)[1]
-			lit := reLiteral.FindStringSubmatch(line)[2]
-			ui64, err := strconv.ParseUint(lit, 10, 64)
+			lit := reLiteral.FindStringSubmatch(line)[1]
+			i64, err := strconv.ParseInt(lit, 10, 64)
 			if err != nil {
 				panic(err)
 			}
-			if sign == "-" {
-				ui64 = math.MaxUint64 - (ui64 - 1)
-			}
-			code = append(code, uint(ui64))
+
+			code = append(code, i64)
 		} else if reSymbol.MatchString(line) {
 			// If there is a symbol
 			sym := reSymbol.FindStringSubmatch(line)[1]
@@ -159,17 +155,17 @@ func pass2(srcLines []string, symbols map[string]uint) []uint {
 	return code
 }
 
-func resolveOperand(symbols map[string]uint, operand string) uint {
+func resolveOperand(symbols map[string]int64, operand string) int64 {
 	if operand == "" {
 		return 0
 	}
 	// If operand is a literal value
 	if reLiteral.MatchString(operand) {
-		ui64, err := strconv.ParseUint(operand, 10, 64)
+		i64, err := strconv.ParseInt(operand, 10, 64)
 		if err != nil {
 			panic(err)
 		}
-		return uint(ui64)
+		return i64
 	}
 	v, ok := symbols[operand]
 	if !ok {
@@ -178,7 +174,7 @@ func resolveOperand(symbols map[string]uint, operand string) uint {
 	return v
 }
 
-func asmInstr(symbols map[string]uint, instr string, operand string) uint {
+func asmInstr(symbols map[string]int64, instr string, operand string) int64 {
 	opcode, ok := instructions[instr]
 	if !ok {
 		panic(fmt.Sprintf("unknown instruction: %s", instr))
@@ -188,10 +184,10 @@ func asmInstr(symbols map[string]uint, instr string, operand string) uint {
 	return code
 }
 
-func asm(filename string) ([]uint, error) {
+func asm(filename string) ([]int64, error) {
 	srcLines, err := readFile(filename)
 	if err != nil {
-		return []uint{}, err
+		return []int64{}, err
 	}
 	symbols := pass1(srcLines)
 	/*

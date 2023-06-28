@@ -38,6 +38,8 @@ func (s *LStack) pop() *big.Int {
 func (s *LStack) push(n *big.Int) {
 	if s.sp < 7 {
 		s.sp++
+	} else {
+		panic("stack full")
 	}
 	s.stack[s.sp] = big.NewInt(0).Set(n)
 	// NOTE: keep sp at TOS so the we can use peek and replace

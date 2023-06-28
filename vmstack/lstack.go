@@ -9,11 +9,13 @@
  */
 package vmstack
 
+import "fmt"
+
 // 8 element limited stack
 type LStack struct {
 	// Using 8 as on some platforms AND mask may be quicker than
 	// condition
-	stack [8]uint
+	stack [8]int64
 	sp    int
 }
 
@@ -22,29 +24,104 @@ func NewLStack() *LStack {
 }
 
 // TODO: research best to decrement then get or otherway around
-func (s *LStack) pop() uint {
+func (s *LStack) pop() int64 {
 	ts := s.stack[s.sp]
 
 	if s.sp > 0 {
 		s.sp--
+	} else {
+		fmt.Printf("STACK EMPTY\n")
+		//panic("stack empty")
 	}
 	return ts
 }
 
-func (s *LStack) push(v uint) {
+func (s *LStack) push(v int64) {
 	if s.sp < 7 {
 		s.sp++
+	} else {
+		panic("stack full")
 	}
 	s.stack[s.sp] = v
 	// NOTE: keep sp at TOS so the we can use peek and replace
 }
 
 // TODO: check name
-func (s *LStack) peek() uint {
+func (s *LStack) peek() int64 {
 	return s.stack[s.sp]
 }
 
 // TODO: check name
-func (s *LStack) replace(n uint) {
+func (s *LStack) replace(n int64) {
 	s.stack[s.sp] = n
+}
+
+func (s *LStack) drop() {
+	if s.sp > 0 {
+		s.sp--
+	} else {
+		panic("stack empty")
+	}
+}
+
+func (s *LStack) dup() {
+	if s.sp < 7 {
+		s.stack[s.sp+1] = s.stack[s.sp]
+		s.sp++
+	} else {
+		panic("stack full")
+	}
+
+}
+
+func (s *LStack) swap() {
+	if s.sp >= 1 {
+		a := s.stack[s.sp-1]
+		b := s.stack[s.sp]
+		s.stack[s.sp-1] = b
+		s.stack[s.sp] = a
+	} else {
+		panic("stack empty")
+	}
+}
+
+func (s *LStack) over() {
+	if s.sp >= 1 {
+		if s.sp < 7 {
+			a := s.stack[s.sp-1]
+			b := s.stack[s.sp]
+
+			s.stack[s.sp-1] = a
+			s.stack[s.sp] = b
+			s.stack[s.sp+1] = a
+			s.sp++
+		} else {
+			panic("stack full")
+		}
+	} else {
+		panic("stack empty")
+	}
+}
+
+// rot (a b c -- b c a)
+func (s *LStack) rot() {
+	if s.sp >= 2 {
+		a := s.stack[s.sp-2]
+		b := s.stack[s.sp-1]
+		c := s.stack[s.sp]
+
+		s.stack[s.sp-2] = b
+		s.stack[s.sp-1] = c
+		s.stack[s.sp] = a
+	} else {
+		panic("stack empty")
+	}
+}
+
+// TODO: Just for debugging
+func (s *LStack) nos() string {
+	if s.sp == 0 {
+		return "nil"
+	}
+	return fmt.Sprintf("%d", s.stack[s.sp-1])
 }
