@@ -10,4 +10,6 @@ loop:   FETCH sum
 		DJNZ loop
 		HLT 1      ; ok
 
+.data
+spacer: 0
 sum:    0

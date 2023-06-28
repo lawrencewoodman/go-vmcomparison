@@ -55,6 +55,8 @@ case7:      FETCH lac
             STORE lac
             JMP decCnt
 
+.data
+spacer:  0
 ; TODO: Implement simple maths
 ;switchBase: switch-4  ; -4 so we don't have to DEC cnt
 switchBase: 7

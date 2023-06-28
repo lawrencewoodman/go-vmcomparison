@@ -18,16 +18,24 @@ import (
 const memSize = 32000
 
 type VMStack struct {
-	mem    [memSize]int64 // Memory
-	pc     int64          // Program Counter
-	dstack *LStack        // 8 element limited data stack
+	code   [memSize]int64    // Code / Program
+	mem    [memSize]*big.Int // Memory
+	pc     int64             // Program Counter
+	dstack *LStack           // 8 element limited data stack
 	// stack  *CStack // 8 element circular data stack
-	rstack *LStack // 8 element limited return
-	hltVal int64   // A value returned by HLT
+	rstack      *LStack          // 8 element limited return
+	hltVal      *big.Int         // A value returned by HLT
+	codeSymbols map[string]int64 // The code symbols table from the assembler - to aid debugging
+	dataSymbols map[string]int64 // The data symbols table from the assembler - to aid debugging
 }
 
 func New() *VMStack {
-	return &VMStack{dstack: NewLStack(), rstack: NewLStack()}
+	var mem [memSize]*big.Int
+	for i := 0; i < memSize; i++ {
+		mem[i] = big.NewInt(0)
+
+	}
+	return &VMStack{mem: mem, dstack: NewLStack(), rstack: NewLStack()}
 	// return &VMStack2{stack: NewCStack()}
 }
 
@@ -43,12 +51,35 @@ func (v *VMStack) Run() (bool, error) {
 	return hlt, err
 }
 
-func (v *VMStack) Mem() [memSize]int64 {
+func (v *VMStack) Mem() [memSize]*big.Int {
 	return v.mem
 }
 
-func (v *VMStack) LoadRoutine(routine []int64) {
-	copy(v.mem[:], routine)
+func (v *VMStack) LoadRoutine(code []int64, data []*big.Int, codeSymbols, dataSymbols map[string]int64) {
+	// Need to copy the individual data points of the routine because they are pointers
+	for i, d := range data {
+		v.mem[i].Set(d)
+	}
+	copy(v.code[:], code)
+	v.codeSymbols = codeSymbols
+	v.dataSymbols = dataSymbols
+}
+
+func (v *VMStack) addr2symbol(addr int64, onlyCode ...bool) string {
+	if len(onlyCode) == 0 {
+		for k, v := range v.dataSymbols {
+			if v == addr && addr != 0 {
+				return k
+			}
+		}
+	}
+
+	for k, v := range v.codeSymbols {
+		if v == addr {
+			return k
+		}
+	}
+	return fmt.Sprintf("%d", addr)
 }
 
 func (v *VMStack) opcode2mnemonic(opcode int64) string {
@@ -60,18 +91,22 @@ func (v *VMStack) opcode2mnemonic(opcode int64) string {
 	panic("opcode not found")
 }
 
+var zero = big.NewInt(0)
+var one = big.NewInt(1)
+
+// TODO: Enforce memSize  being int64
+var bmemSize = big.NewInt(memSize)
+
 // Returns: hlt, error
 func (v *VMStack) Step() (bool, error) {
-	var zero = big.NewInt(0)
-	var one = big.NewInt(1)
-
 	if v.pc >= memSize {
 		return false, fmt.Errorf("outside memory range: %d", v.pc)
 	}
-	ir := v.mem[v.pc]
+	ir := v.code[v.pc]
 	opcode := (ir & 0xFF000000)
 	operand := (ir & 0x00FFFFFF)
-	//fmt.Printf("PC: %3d, instruction: %5s, operand: %4d, pre NOS: %5s, pre TOS: %5d, post TOS:", v.pc, v.opcode2mnemonic(opcode), operand, v.dstack.nos(), v.dstack.peek())
+
+	//fmt.Printf("%6s: %5s %-7s   (%5s %5d -- ", v.addr2symbol(v.pc, true), v.opcode2mnemonic(opcode), v.addr2symbol(operand), v.dstack.nos(), v.dstack.peek())
 
 	if operand > 0 {
 		v.dstack.push(big.NewInt(operand))
@@ -79,52 +114,35 @@ func (v *VMStack) Step() (bool, error) {
 
 	switch opcode {
 	case 0 << 24: // HLT
-		t := v.dstack.pop()
-		if !t.IsInt64() {
-			panic("halt value not in64")
-		}
-		v.hltVal = t.Int64()
+		v.hltVal = v.dstack.pop()
 		return true, nil
 	case 1 << 24: // FETCH
-		t := v.dstack.peek()
-		if !t.IsInt64() {
-			panic("address is not in64")
-		}
-		addr := t.Int64()
-		if addr >= memSize {
+		addr := v.dstack.peek()
+		// if addr > memSize
+		if addr.Cmp(bmemSize) >= 0 {
 			return false, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, addr)
 		}
-		v.dstack.replace(big.NewInt(v.mem[addr]))
+		v.dstack.replace(v.mem[addr.Int64()])
 		v.pc++
 	case 2 << 24: // STORE (n addr --)
-		t := v.dstack.pop()
-		if !t.IsInt64() {
-			panic("address is not in64")
-		}
-		addr := t.Int64()
-		if addr >= memSize {
+		addr := v.dstack.pop()
+		// if addr > memSize
+		if addr.Cmp(bmemSize) >= 0 {
 			return false, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, addr)
 		}
-
-		t = v.dstack.pop()
-		if !t.IsInt64() {
-			panic("value is not in64")
-		}
-
-		v.mem[addr] = t.Int64()
+		v.mem[addr.Int64()] = big.NewInt(0).Set(v.dstack.pop())
 		v.pc++
 	case 3 << 24: // ADD
 		a := v.dstack.pop()
 		b := v.dstack.peek()
-		a.Add(a, b)
-		v.dstack.replace(a)
+		c := big.NewInt(0)
+		c = c.Add(a, b)
+		v.dstack.replace(c)
 		v.pc++
 	case 4 << 24: // SUB (a b -- a-b)
 		b := v.dstack.pop()
 		a := v.dstack.peek()
-		// TODO: Work out why can't just use a.Sub(a,b)  and replace(a)
-		//a.Sub(a, b)
-		c := big.NewInt(0).Set(a)
+		c := big.NewInt(0)
 		c = c.Sub(a, b)
 		v.dstack.replace(c)
 		v.pc++
@@ -250,6 +268,7 @@ func (v *VMStack) Step() (bool, error) {
 	default:
 		panic("unknown opcode")
 	}
-	//fmt.Printf("post TOS: %d\n", v.dstack.peek())
+
+	//fmt.Printf("%5s %5d)\n", v.dstack.nos(), v.dstack.peek())
 	return false, nil
 }

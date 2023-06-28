@@ -8,5 +8,7 @@
 
         HLT 1      ; ok
 
+.data
+spacer: 0          ; Used so that we can reference a as an operand
 a:      4094
 b:      6

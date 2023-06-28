@@ -11,6 +11,7 @@ package bvmstack
 import (
 	"bufio"
 	"fmt"
+	"math/big"
 	"os"
 	"regexp"
 	"strconv"
@@ -69,39 +70,67 @@ var reInstr = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]+)\s*`)
 var reOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z]+)\s*`)
 var reLiteral = regexp.MustCompile(`^\s*([\-]?[0-9]+)\s*`)
 var reSymbol = regexp.MustCompile(`^\s*!([a-zA-Z][0-9a-zA-Z]*).*`)
+var reDirective = regexp.MustCompile(`^\.([a-zA-Z]+)$`)
 var reComment = regexp.MustCompile(`^\s*(;.*)$`)
 
-// Build symbol table
-func pass1(srcLines []string) map[string]int64 {
-	var pos int64 = 0
-	symbols := make(map[string]int64, 0)
+// pass1 returns code and data symbol tables
+func pass1(srcLines []string) (map[string]int64, map[string]int64) {
+	symbolType := "c"
+	var dataPos int64 = 0
+	var codePos int64 = 0
+	codeSymbols := make(map[string]int64, 0)
+	dataSymbols := make(map[string]int64, 0)
 	for _, line := range srcLines {
+		// If there is a directive
+		if reDirective.MatchString(line) {
+			directive := reDirective.FindStringSubmatch(line)[1]
+			if directive == "data" {
+				symbolType = "d"
+			} else {
+				panic(fmt.Sprintf("unknown directive: .%s", directive))
+			}
+		}
 		// If there is a label
 		if reLabel.MatchString(line) {
 			label := reLabel.FindStringSubmatch(line)[1]
 			matchIndices := reLabel.FindStringSubmatchIndex(line)
-			symbols[label] = pos
+			if symbolType == "c" {
+				codeSymbols[label] = codePos
+			} else {
+				dataSymbols[label] = dataPos
+			}
 			line = line[matchIndices[1]:]
 		}
 
 		// If there is an instruction
 		if reInstr.MatchString(line) {
-			pos++
+			codePos++
 			continue
 		} else if reLiteral.MatchString(line) {
 			// If there is a literal value
-			pos++
+			dataPos++
 		} else if reSymbol.MatchString(line) {
 			// If there is a symbol
-			pos++
+			dataPos++
 		}
 	}
-	return symbols
+	return codeSymbols, dataSymbols
 }
 
-func pass2(srcLines []string, symbols map[string]int64) []int64 {
+func pass2(srcLines []string, codeSymbols, dataSymbols map[string]int64) ([]int64, []*big.Int) {
+	outputType := "c"
 	code := make([]int64, 0)
+	data := make([]*big.Int, 0)
 	for _, line := range srcLines {
+		// If there is a directive
+		if reDirective.MatchString(line) {
+			directive := reDirective.FindStringSubmatch(line)[1]
+			if directive == "data" {
+				outputType = "d"
+			} else {
+				panic(fmt.Sprintf("unknown directive: .%s", directive))
+			}
+		}
 		// If there is a label
 		if reLabel.MatchString(line) {
 			// Remove from line
@@ -129,70 +158,96 @@ func pass2(srcLines []string, symbols map[string]int64) []int64 {
 			if len(line) > 0 {
 				panic(fmt.Sprintf("remaining line: %s", line))
 			}
-			code = append(code, asmInstr(symbols, instr, operand))
+			code = append(code, asmInstr(codeSymbols, dataSymbols, instr, operand))
 		} else if reLiteral.MatchString(line) {
 			// If there is a literal value
 			lit := reLiteral.FindStringSubmatch(line)[1]
-			i64, err := strconv.ParseInt(lit, 10, 64)
-			if err != nil {
-				panic(err)
+			num, ok := new(big.Int).SetString(lit, 10)
+			if !ok {
+				panic("can't create literal value")
 			}
-			code = append(code, i64)
+			if outputType == "d" {
+				data = append(data, num)
+			} else {
+				panic("literal shouldn't appear here")
+			}
 		} else if reSymbol.MatchString(line) {
 			// If there is a symbol
 			sym := reSymbol.FindStringSubmatch(line)[1]
-			v, ok := symbols[sym]
-			if !ok {
-				panic(fmt.Sprintf("unknown symbol: %s", sym))
+			addr, err := resolveSymbol(codeSymbols, dataSymbols, sym)
+			if err != nil {
+				panic(err)
 			}
-			code = append(code, v)
+			if outputType == "d" {
+				data = append(data, big.NewInt(addr))
+			} else {
+				panic("symbol shouldn't appear here")
+			}
 		}
 	}
-	return code
+	return code, data
 }
 
-func resolveOperand(symbols map[string]int64, operand string) int64 {
+func resolveSymbol(codeSymbols, dataSymbols map[string]int64, sym string) (int64, error) {
+	v, ok := codeSymbols[sym]
+	if !ok {
+		v, ok = dataSymbols[sym]
+		if !ok {
+			return v, fmt.Errorf("unknown symbol: %s", sym)
+		}
+	}
+	return v, nil
+}
+
+func resolveOperand(codeSymbols, dataSymbols map[string]int64, operand string) int64 {
 	if operand == "" {
 		return 0
 	}
 	// If operand is a literal value
 	if reLiteral.MatchString(operand) {
-		i64, err := strconv.ParseInt(operand, 10, 64)
+		addr, err := strconv.ParseInt(operand, 10, 64)
 		if err != nil {
 			panic(err)
 		}
-		return i64
+		return addr
 	}
-	v, ok := symbols[operand]
-	if !ok {
-		panic(fmt.Sprintf("unknown operand: %s", operand))
+	addr, err := resolveSymbol(codeSymbols, dataSymbols, operand)
+	if err != nil {
+		panic(err)
 	}
-	return v
+	return addr
 }
 
-func asmInstr(symbols map[string]int64, instr string, operand string) int64 {
+func asmInstr(codeSymbols, dataSymbols map[string]int64, instr string, operand string) int64 {
 	opcode, ok := instructions[instr]
 	if !ok {
 		panic(fmt.Sprintf("unknown instruction: %s", instr))
 	}
 
-	code := opcode + resolveOperand(symbols, operand)
+	code := opcode + resolveOperand(codeSymbols, dataSymbols, operand)
 	return code
 }
 
-func asm(filename string) ([]int64, error) {
+func printSymbols(codeSymbols, dataSymbols map[string]int64) {
+	fmt.Printf("Symbols\n=======\n\ncode:\n")
+	for k, v := range codeSymbols {
+		fmt.Printf("  %s: %d\n", k, v)
+	}
+	fmt.Printf("\ndata:\n")
+	for k, v := range dataSymbols {
+		fmt.Printf("  %s: %d\n", k, v)
+	}
+	fmt.Printf("\n")
+}
+
+func asm(filename string) ([]int64, []*big.Int, map[string]int64, map[string]int64, error) {
 	srcLines, err := readFile(filename)
 	if err != nil {
-		return []int64{}, err
+		return []int64{}, []*big.Int{}, map[string]int64{}, map[string]int64{}, err
 	}
-	symbols := pass1(srcLines)
-	/*
-		fmt.Printf("Symbols\n=======\n")
-		for k, v := range symbols {
-			fmt.Printf("%s: %d\n", k, v)
-		}
-	*/
-	code := pass2(srcLines, symbols)
+	codeSymbols, dataSymbols := pass1(srcLines)
+	code, data := pass2(srcLines, codeSymbols, dataSymbols)
+	//printSymbols(codeSymbols, dataSymbols)
 	//fmt.Printf("%v\n", code)
-	return code, nil
+	return code, data, codeSymbols, dataSymbols, nil
 }

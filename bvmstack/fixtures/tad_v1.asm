@@ -9,7 +9,10 @@
 			AND 8191    ; 13-bit mask
         	STORE lac
 	        HLT 1
-memBase:    9
+
+.data
+spacer:     0
+memBase:    1
 opAddr:     3
 lac:        9
 val:        23

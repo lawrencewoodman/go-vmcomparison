@@ -207,7 +207,6 @@ func resolveSymbol(codeSymbols, dataSymbols map[string]int64, sym string) (int64
 		}
 	}
 	return v, nil
-
 }
 
 func resolveOperand(codeSymbols, dataSymbols map[string]int64, operand string) int64 {

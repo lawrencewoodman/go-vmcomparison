@@ -58,7 +58,7 @@ func (v *VM2) Mem() [memSize]*big.Int {
 	return v.mem
 }
 
-func (v *VM2) LoadRoutine(code []int64, data []*big.Int, codeSymbols map[string]int64, dataSymbols map[string]int64) {
+func (v *VM2) LoadRoutine(code []int64, data []*big.Int, codeSymbols, dataSymbols map[string]int64) {
 	// Need to copy the individual data points of the routine because they are pointers
 	for i, d := range data {
 		v.mem[i].Set(d)

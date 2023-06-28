@@ -14,15 +14,6 @@ loop:       STORE cnt
             DJNZ loop
             HLT 1               ; ok
 
-switchTable: 10     ; TODO: Allow switchTable here or similar
-!case0
-!case1
-!case2
-!case3
-!case4
-!case5
-!case6
-!case7
 
 switch:
 case0:      FETCH lac
@@ -64,6 +55,19 @@ case7:      FETCH lac
             ADD 1001
             STORE lac
             RET
+
+.data
+spacer:  0
+
+switchTable: 1     ; TODO: Allow switchTable here or similar
+!case0
+!case1
+!case2
+!case3
+!case4
+!case5
+!case6
+!case7
 
 lac:     3
 ok:      0

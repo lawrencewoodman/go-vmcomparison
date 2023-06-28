@@ -37,7 +37,7 @@ func (s *LStack) push(n *big.Int) {
 	if s.sp < 7 {
 		s.sp++
 	}
-	s.stack[s.sp] = n
+	s.stack[s.sp] = big.NewInt(0).Set(n)
 	// NOTE: keep sp at TOS so the we can use peek and replace
 }
 
@@ -56,5 +56,5 @@ func (s *LStack) nos() string {
 
 // TODO: check name
 func (s *LStack) replace(n *big.Int) {
-	s.stack[s.sp] = n
+	s.stack[s.sp] = big.NewInt(0).Set(n)
 }

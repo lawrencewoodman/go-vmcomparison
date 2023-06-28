@@ -11,4 +11,6 @@ loop:   SWAP       ; (sum cnt -- cnt sum)
 		STORE sum
 		HLT 1      ; ok
 
+.data
+spacer: 0
 sum:    0

@@ -88,6 +88,8 @@ halt:   DROP
         HLT 1
 
 
+.data
+spacer:  0
 pc:      0
 hltVal:  0
 memBase: !program

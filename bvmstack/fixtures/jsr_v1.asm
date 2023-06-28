@@ -6,4 +6,7 @@
 
 setVal:	STORE val
 		RET
+
+.data
+spacer: 0
 val:    0
