@@ -52,8 +52,8 @@ var reIndirect = regexp.MustCompile(`^\s*(\[([0-9a-zA-z\-\+]+)\])`)
 // Build symbol table
 func pass1(srcLines []string) (map[string]int64, map[string]int64) {
 	symbolType := "c"
-	var memPos int64 = 0
-	var progPos int64 = 0
+	var dataPos int64 = 0
+	var codePos int64 = 0
 	codeSymbols := make(map[string]int64, 0)
 	dataSymbols := make(map[string]int64, 0)
 	for _, line := range srcLines {
@@ -71,21 +71,21 @@ func pass1(srcLines []string) (map[string]int64, map[string]int64) {
 			label := reLabel.FindStringSubmatch(line)[1]
 			matchIndices := reLabel.FindStringSubmatchIndex(line)
 			if symbolType == "c" {
-				codeSymbols[label] = progPos
+				codeSymbols[label] = codePos
 			} else {
-				dataSymbols[label] = memPos
+				dataSymbols[label] = dataPos
 			}
 			line = line[matchIndices[1]:]
 		}
 		if reInstr3.MatchString(line) || reInstr2.MatchString(line) {
 			// If there is an instruction
-			progPos += 3
+			codePos += 3
 		} else if reExpr.MatchString(line) {
 			// If there is an expression
-			memPos++
+			dataPos++
 		} else if reLiteral.MatchString(line) {
 			// If there is a literal value
-			memPos++
+			dataPos++
 		}
 
 	}
@@ -165,6 +165,12 @@ func pass2(srcLines []string, codeSymbols, dataSymbols map[string]int64) ([]int6
 		}
 
 	}
+
+	// Add an infinite loop at the end
+	// TODO: consider an instruction which will raise an error / exception
+	// TODO: do we need this guard, look at alternative
+	code = append(code, asmInstr(codeSymbols, dataSymbols, "0", "0", fmt.Sprintf("%d", codePos))...)
+
 	return code, data
 }
 
@@ -227,6 +233,31 @@ func asmInstr(codeSymbols, dataSymbols map[string]int64, operandA string, operan
 	return code
 }
 
+func checkJumpsInRange(code []int64) error {
+	for i := 0; i < len(code); i += 3 {
+		c := code[i+2]
+		if c > 0 && c >= int64(len(code)) {
+			return fmt.Errorf("C operand outside code: %d", c)
+		}
+	}
+	return nil
+}
+
+func checkMemInRange(code []int64, data []*big.Int) error {
+	for i := 0; i < len(code); i += 3 {
+		a := code[i]
+		b := code[i+1]
+		if a > 0 && a >= int64(len(data)) && a != 1000 {
+			return fmt.Errorf("a operand outside data: %d", a)
+		}
+		if b > 0 && b >= int64(len(data)) && b != 1000 {
+			return fmt.Errorf("a operand outside data: %d", b)
+		}
+
+	}
+	return nil
+}
+
 func printSymbols(symbols map[string]*big.Int) {
 	labels := make([]string, 0, len(symbols))
 	for l := range symbols {
@@ -248,6 +279,12 @@ func asm(filename string) ([]int64, []*big.Int, map[string]int64, map[string]int
 	}
 	codeSymbols, dataSymbols := pass1(srcLines)
 	code, data := pass2(srcLines, codeSymbols, dataSymbols)
+	if err := checkJumpsInRange(code); err != nil {
+		return []int64{}, []*big.Int{}, map[string]int64{}, map[string]int64{}, err
+	}
+	if err := checkMemInRange(code, data); err != nil {
+		return []int64{}, []*big.Int{}, map[string]int64{}, map[string]int64{}, err
+	}
 	//printSymbols(symbols)
 	//fmt.Printf("%v\n", code)
 	return code, data, codeSymbols, dataSymbols, nil
