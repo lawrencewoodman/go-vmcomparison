@@ -23,6 +23,7 @@ done:           ; Restore l4096
                 ; HLT
                 lm1 1000
 
+.data
 z:      0
 a:      4094
 b:      6

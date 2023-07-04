@@ -38,37 +38,12 @@ andit:          ; Store the AND mask
                 ; HLT
 done:           lm1 1000
 
-z:      0
-lm1:    -1
-lmdone: 0-done
-lmandit: 0-andit
-
-cnt:      0
-memLoc:   0
-mmemBase: 0-60   ; TODO: be able to put memBase or similar here
-mopAddr:  0-4
-lac:      4503
-tmp:      0
-val:      3003
-
-res:    0
-m:      0
-lhbitval:   8192
-lhbitvalc:  8192
-l13:        13
-lmhbitval: -8192
-maskl:     4096
-mmask13:   -8191    ; -0o17777
-mmaskl:    -4096    ; -0o10000
-
                 ;--------------------------
                 ; AND lac
                 ; andMask contains value
                 ; to mask with
                 ;--------------------------
 
-andMask:        0
-and13ret:       0
 and13:          ; Zero res
                 res res
 
@@ -140,3 +115,30 @@ acont:          ; andMask << 2
                 ;------------
                 ; End of AND
                 ;------------
+
+.data
+z:      0
+lm1:    -1
+lmdone: 0-done
+lmandit: 0-andit
+
+cnt:      0
+memLoc:   0
+mmemBase: 0-6    ; TODO: be able to put memBase or similar here
+mopAddr:  0-4
+lac:      4503
+tmp:      0
+val:      3003
+
+res:    0
+m:      0
+lhbitval:   8192
+lhbitvalc:  8192
+l13:        13
+lmhbitval: -8192
+maskl:     4096
+mmask13:   -8191    ; -0o17777
+mmaskl:    -4096    ; -0o10000
+
+andMask:        0
+and13ret:       0
