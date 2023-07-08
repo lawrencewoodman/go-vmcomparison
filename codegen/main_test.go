@@ -24,13 +24,13 @@ func TestMain(m *testing.M) {
 type TestFile struct {
 	testFilename string
 	asmFilename  string
-	want         map[uint]uint
+	want         map[int64]int64
 }
 
 var testFiles = []TestFile{
-	{"tad_v1_test.go", "tad_v1.asm", map[uint]uint{3: 32}},
-	{"subleq_v1_test.go", "subleq_v1.asm", map[uint]uint{22: 5000}},
-	{"loopuntil_v1_test.go", "loopuntil_v1.asm", map[uint]uint{0: 5000}},
+	{"tad_v1_test.go", "tad_v1.asm", map[int64]int64{3: 32}},
+	{"subleq_v1_test.go", "subleq_v1.asm", map[int64]int64{22: 5000}},
+	{"loopuntil_v1_test.go", "loopuntil_v1.asm", map[int64]int64{0: 5000}},
 }
 
 // Create test files if they don't exist or the source has changed

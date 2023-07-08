@@ -2,7 +2,7 @@
 
 package codegen
 
-func initsubleq_v1() ([]uint, []func(*CGVM)) {
+func initsubleq_v1() ([]int64, []func(*CGVM)) {
 	const (
 		p_exec = 9
 		p_fetch = 0
@@ -46,7 +46,7 @@ func initsubleq_v1() ([]uint, []func(*CGVM)) {
 		func(v *CGVM) { op_STA(v, m_hltVal) },
 		func(v *CGVM) { op_HLT(v, m_ok) },
 	}
-	memory := []uint{
+	memory := []int64{
 		1000,
 		0,
 		0,
@@ -71,11 +71,11 @@ func initsubleq_v1() ([]uint, []func(*CGVM)) {
 		0,
 		0,
 		4999,
-		18446744073709551615,
+		-1,
 	}
 	return memory, program
 }
 
 func init() {
-	addTest("subleq_v1.asm", initsubleq_v1, map[uint]uint{22: 5000,})
+	addTest("subleq_v1.asm", initsubleq_v1, map[int64]int64{22: 5000,})
 }

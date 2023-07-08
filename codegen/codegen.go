@@ -7,37 +7,28 @@
  */
 package codegen
 
-import (
-	"math"
-)
-
 // TODO: Make this configurable
 const memSize = 32000
 
 type CGVM struct {
-	mem    [memSize]uint // Memory
-	ac     uint          // 32-bit accumulator
-	pc     uint          // Program Counter
-	hltNow bool          // Whether to halt
-	hltVal uint          // A value returned by HLT
+	mem    [memSize]int64 // Memory
+	ac     int64          // Accumulator
+	pc     int64          // Program Counter
+	hltNow bool           // Whether to halt
+	hltVal int64          // A value returned by HLT
 }
 
 func New() *CGVM {
 	return &CGVM{}
 }
 
-func mask32(n uint) uint {
-	return n & 0xFFFFFFFF
-}
-
-func calcBaseIndexAddr(v *CGVM, baseIndirect uint, indexIndirect uint) uint {
-	// TODO: Assume always at least 4096 memory to avoid check
-	base := v.mem[baseIndirect]
-	index := v.mem[indexIndirect]
+func calcBaseIndexAddr(v *CGVM, baseIndirect int64, indexIndirect int64) int64 {
+	base := calcIndirectAddr(v, baseIndirect)
+	index := calcIndirectAddr(v, indexIndirect)
 	return base + index
 }
 
-func calcIndirectAddr(v *CGVM, addr uint) uint {
+func calcIndirectAddr(v *CGVM, addr int64) int64 {
 	if addr >= memSize {
 		// TODO: Implement an error
 		panic("outside memory range")
@@ -45,63 +36,63 @@ func calcIndirectAddr(v *CGVM, addr uint) uint {
 	return v.mem[addr]
 }
 
-func op_HLT(v *CGVM, addr uint) {
+func op_HLT(v *CGVM, addr int64) {
 	if addr >= memSize {
 		// TODO: Implement an error
 		panic("outside memory range")
 	}
 	v.hltNow = true
 	v.hltVal = v.mem[addr]
-	v.pc = mask32(v.pc + 1)
+	v.pc++
 }
 
-func op_ADD(v *CGVM, addr uint) {
+func op_ADD(v *CGVM, addr int64) {
 	if addr >= memSize {
 		// TODO: Implement an error
 		panic("outside memory range")
 	}
-	v.ac = mask32(v.ac + v.mem[addr])
-	v.pc = mask32(v.pc + 1)
+	v.ac += v.mem[addr]
+	v.pc++
 }
 
-func op_SUB(v *CGVM, addr uint) {
+func op_SUB(v *CGVM, addr int64) {
 	if addr >= memSize {
 		// TODO: Implement an error
 		panic("outside memory range")
 	}
-	v.ac = mask32(v.ac - v.mem[addr])
-	v.pc = mask32(v.pc + 1)
+	v.ac -= v.mem[addr]
+	v.pc++
 }
 
-func op_AND(v *CGVM, addr uint) {
+func op_AND(v *CGVM, addr int64) {
 	if addr >= memSize {
 		// TODO: Implement an error
 		panic("outside memory range")
 	}
-	v.ac = v.ac & v.mem[addr]
-	v.pc = mask32(v.pc + 1)
+	v.ac &= v.mem[addr]
+	v.pc++
 }
 
-func op_STA(v *CGVM, addr uint) {
+func op_STA(v *CGVM, addr int64) {
 	if addr >= memSize {
 		// TODO: Implement an error
 		panic("outside memory range")
 	}
 	v.mem[addr] = v.ac
-	v.pc = mask32(v.pc + 1)
+	v.pc++
 	// TODO: what to do about PC being too high
 }
 
-func op_LDA(v *CGVM, addr uint) {
+func op_LDA(v *CGVM, addr int64) {
 	if addr >= memSize {
 		// TODO: Implement an error
 		panic("outside memory range")
 	}
 	v.ac = v.mem[addr]
-	v.pc = mask32(v.pc + 1)
+	v.pc++
 }
 
-func op_JMP(v *CGVM, addr uint) {
+func op_JMP(v *CGVM, addr int64) {
 	if addr >= memSize {
 		// TODO: Implement an error
 		panic("outside memory range")
@@ -110,7 +101,7 @@ func op_JMP(v *CGVM, addr uint) {
 	v.pc = addr
 }
 
-func op_JEQ(v *CGVM, addr uint) {
+func op_JEQ(v *CGVM, addr int64) {
 	if addr >= memSize {
 		// TODO: Implement an error
 		panic("outside memory range")
@@ -118,47 +109,47 @@ func op_JEQ(v *CGVM, addr uint) {
 	if v.ac == 0 {
 		v.pc = addr
 	} else {
-		v.pc = mask32(v.pc + 1)
+		v.pc++
 	}
 }
 
-func op_JGT(v *CGVM, addr uint) {
+func op_JGT(v *CGVM, addr int64) {
 	if addr >= memSize {
 		// TODO: Implement an error
 		panic("outside memory range")
 	}
-	if v.ac != 0 && v.ac <= math.MaxInt32 {
+	if v.ac > 0 {
 		v.pc = addr
 	} else {
-		v.pc = mask32(v.pc + 1)
+		v.pc++
 	}
 }
 
-func op_DSZ(v *CGVM, addr uint) {
+func op_DSZ(v *CGVM, addr int64) {
 	if addr >= memSize {
 		// TODO: Implement an error
 		panic("outside memory range")
 	}
-	v.mem[addr] = mask32(v.mem[addr] - 1)
+	v.mem[addr]--
 	if v.mem[addr] == 0 {
-		v.pc = mask32(v.pc + 2)
+		v.pc += 2
 	} else {
-		v.pc = mask32(v.pc + 1)
+		v.pc++
 		// TODO: this mask isn't quite right because of separate program
 		// TODO: array
 	}
 }
 
-func op_INC(v *CGVM, addr uint) {
+func op_INC(v *CGVM, addr int64) {
 	if addr >= memSize {
 		// TODO: Implement an error
 		panic("outside memory range")
 	}
-	v.mem[addr] = mask32(v.mem[addr] + 1)
-	v.pc = mask32(v.pc + 1)
+	v.mem[addr]++
+	v.pc++
 }
 
-func (v *CGVM) LoadMem(mem []uint) {
+func (v *CGVM) LoadMem(mem []int64) {
 	copy(v.mem[:], mem)
 }
 

@@ -11,7 +11,6 @@ package codegen
 import (
 	"bufio"
 	"fmt"
-	"math"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -19,7 +18,7 @@ import (
 	"strconv"
 )
 
-var instructions = map[string]uint{
+var instructions = map[string]int64{
 	"HLT":   0 << 24,
 	"LDA":   1 << 24,
 	"STA":   2 << 24,
@@ -70,19 +69,19 @@ var reLabel = regexp.MustCompile(`^\s*([a-zA-Z]+[0-9a-zA-Z]*):`)
 var reInstr = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]+)\s+`)
 var reAddrMode = regexp.MustCompile(`^\s*([iI]{1,2})\s+`)
 var reOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z,]+).*`)
-var reLiteral = regexp.MustCompile(`^\s*([\-]?)([0-9]+).*`)
+var reLiteral = regexp.MustCompile(`^\s*([\-]?[0-9]+).*`)
 var reSymbol = regexp.MustCompile(`^\s*([a-zA-Z][0-9a-zA-Z]*).*`)
 var reIndexOperand = regexp.MustCompile(`^\s*([0-9a-zA-Z]+),([0-9a-zA-z]+).*`)
 var reDirective = regexp.MustCompile(`^\.([a-zA-Z]+)$`)
 var reFilename = regexp.MustCompile(`^([0-9a-zA-z_]+).*`)
 
 // pass1 returns program and data symbol tables
-func pass1(srcLines []string) (map[string]uint, map[string]uint) {
+func pass1(srcLines []string) (map[string]int64, map[string]int64) {
 	symbolType := "p"
-	var memPos uint = 0
-	var progPos uint = 0
-	progSymbols := make(map[string]uint, 0)
-	memSymbols := make(map[string]uint, 0)
+	var memPos int64 = 0
+	var progPos int64 = 0
+	progSymbols := make(map[string]int64, 0)
+	memSymbols := make(map[string]int64, 0)
 	for _, line := range srcLines {
 		// If there is a directive
 		if reDirective.MatchString(line) {
@@ -119,7 +118,7 @@ func pass1(srcLines []string) (map[string]uint, map[string]uint) {
 	return progSymbols, memSymbols
 }
 
-func pass2(srcLines []string, progSymbols, memSymbols map[string]uint) string {
+func pass2(srcLines []string, progSymbols, memSymbols map[string]int64) string {
 	code := "\tprogram := []func(v *CGVM){\n"
 	for lineNum, line := range srcLines {
 		// If there is a directive
@@ -128,7 +127,7 @@ func pass2(srcLines []string, progSymbols, memSymbols map[string]uint) string {
 			if directive == "data" {
 				code += "\t}"
 				code += "\n"
-				code += "\tmemory := []uint{\n"
+				code += "\tmemory := []int64{\n"
 			} else {
 				panic(fmt.Sprintf("unknown directive: .%s", directive))
 			}
@@ -184,17 +183,12 @@ func pass2(srcLines []string, progSymbols, memSymbols map[string]uint) string {
 
 		} else if reLiteral.MatchString(line) {
 			// If there is a literal value
-			sign := reLiteral.FindStringSubmatch(line)[1]
-			lit := reLiteral.FindStringSubmatch(line)[2]
-			if sign == "-" {
-				ui64, err := strconv.ParseUint(lit, 10, 64)
-				if err != nil {
-					panic(err)
-				}
-				// Roll the number around to represent a negative number
-				ui64 = math.MaxUint64 - (ui64 - 1)
-				lit = strconv.FormatUint(ui64, 10)
+			lit := reLiteral.FindStringSubmatch(line)[1]
+			num, err := strconv.ParseInt(lit, 10, 64)
+			if err != nil {
+				panic(err)
 			}
+			lit = strconv.FormatInt(num, 10)
 
 			code += fmt.Sprintf("\t\t%s,\n", lit)
 		}
@@ -203,7 +197,7 @@ func pass2(srcLines []string, progSymbols, memSymbols map[string]uint) string {
 	return code
 }
 
-func resolveOperand(progSymbols, memSymbols map[string]uint, addrMode, operand string) string {
+func resolveOperand(progSymbols, memSymbols map[string]int64, addrMode, operand string) string {
 	// If operand is a literal value
 	if reLiteral.MatchString(operand) {
 		return operand
@@ -229,7 +223,7 @@ func resolveOperand(progSymbols, memSymbols map[string]uint, addrMode, operand s
 	panic(fmt.Sprintf("unknown operand: %s", operand))
 }
 
-func asmInstr(progSymbols, memSymbols map[string]uint, instr string, addrMode string, operand string) string {
+func asmInstr(progSymbols, memSymbols map[string]int64, instr string, addrMode string, operand string) string {
 	// TODO: don't need map for instructions as opcode value isn't needed
 	_, ok := instructions[instr]
 	if !ok {
@@ -239,7 +233,7 @@ func asmInstr(progSymbols, memSymbols map[string]uint, instr string, addrMode st
 	return fmt.Sprintf("\t\tfunc(v *CGVM) { op_%s(v, %s) },\n", instr, resolveOperand(progSymbols, memSymbols, addrMode, operand))
 }
 
-func createConsts(progSymbols, memSymbols map[string]uint) string {
+func createConsts(progSymbols, memSymbols map[string]int64) string {
 	code := "\tconst (\n"
 	pkeys := make([]string, 0, len(progSymbols))
 	mkeys := make([]string, 0, len(memSymbols))
@@ -269,8 +263,8 @@ func createConsts(progSymbols, memSymbols map[string]uint) string {
 	return code
 }
 
-func makeWantMapStr(want map[uint]uint) string {
-	str := "map[uint]uint{"
+func makeWantMapStr(want map[int64]int64) string {
+	str := "map[int64]int64{"
 	for k, v := range want {
 		str += fmt.Sprintf("%d: %d,", k, v)
 	}
@@ -278,7 +272,7 @@ func makeWantMapStr(want map[uint]uint) string {
 	return str
 }
 
-func asm(filename string, want map[uint]uint) (string, error) {
+func asm(filename string, want map[int64]int64) (string, error) {
 	srcLines, err := readFile(filename)
 	if err != nil {
 		return "", err
@@ -289,7 +283,7 @@ func asm(filename string, want map[uint]uint) (string, error) {
 	header += "package codegen\n\n"
 	cmd_name := reFilename.FindStringSubmatch(filepath.Base(filename))[1]
 	code := header
-	code += fmt.Sprintf("func init%s() ([]uint, []func(*CGVM)) {\n", cmd_name)
+	code += fmt.Sprintf("func init%s() ([]int64, []func(*CGVM)) {\n", cmd_name)
 	code += createConsts(progSymbols, memSymbols)
 	code += pass2(srcLines, progSymbols, memSymbols)
 	code += "\treturn memory, program\n"

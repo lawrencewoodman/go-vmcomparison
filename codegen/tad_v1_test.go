@@ -2,7 +2,7 @@
 
 package codegen
 
-func inittad_v1() ([]uint, []func(*CGVM)) {
+func inittad_v1() ([]int64, []func(*CGVM)) {
 	const (
 		p_done = 4
 	)
@@ -21,7 +21,7 @@ func inittad_v1() ([]uint, []func(*CGVM)) {
 		func(v *CGVM) { op_STA(v, m_lac) },
 		func(v *CGVM) { op_HLT(v, m_ok) },
 	}
-	memory := []uint{
+	memory := []int64{
 		0,
 		5,
 		8191,
@@ -33,5 +33,5 @@ func inittad_v1() ([]uint, []func(*CGVM)) {
 }
 
 func init() {
-	addTest("tad_v1.asm", inittad_v1, map[uint]uint{3: 32,})
+	addTest("tad_v1.asm", inittad_v1, map[int64]int64{3: 32,})
 }

@@ -6,13 +6,13 @@ import (
 
 type Test struct {
 	name string
-	init func() ([]uint, []func(*CGVM))
-	want map[uint]uint // [memloc]value
+	init func() ([]int64, []func(*CGVM))
+	want map[int64]int64 // [memloc]value
 }
 
 var tests = []Test{}
 
-func addTest(name string, init func() ([]uint, []func(*CGVM)), want map[uint]uint) {
+func addTest(name string, init func() ([]int64, []func(*CGVM)), want map[int64]int64) {
 	tests = append(tests, Test{name, init, want})
 }
 

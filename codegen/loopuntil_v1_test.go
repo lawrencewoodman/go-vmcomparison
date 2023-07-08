@@ -2,7 +2,7 @@
 
 package codegen
 
-func initloopuntil_v1() ([]uint, []func(*CGVM)) {
+func initloopuntil_v1() ([]int64, []func(*CGVM)) {
 	const (
 		p_done = 7
 		p_loop = 3
@@ -25,7 +25,7 @@ func initloopuntil_v1() ([]uint, []func(*CGVM)) {
 		func(v *CGVM) { op_STA(v, m_sum) },
 		func(v *CGVM) { op_HLT(v, m_ok) },
 	}
-	memory := []uint{
+	memory := []int64{
 		0,
 		0,
 		0,
@@ -37,5 +37,5 @@ func initloopuntil_v1() ([]uint, []func(*CGVM)) {
 }
 
 func init() {
-	addTest("loopuntil_v1.asm", initloopuntil_v1, map[uint]uint{0: 5000,})
+	addTest("loopuntil_v1.asm", initloopuntil_v1, map[int64]int64{0: 5000,})
 }
