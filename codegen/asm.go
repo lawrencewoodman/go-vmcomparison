@@ -119,7 +119,7 @@ func pass1(srcLines []string) (map[string]int64, map[string]int64) {
 }
 
 func pass2(srcLines []string, progSymbols, memSymbols map[string]int64) string {
-	code := "\tprogram := []func(v *CGVM){\n"
+	code := "\tprogram := []func(v *CGVM) error {\n"
 	for lineNum, line := range srcLines {
 		// If there is a directive
 		if reDirective.MatchString(line) {
@@ -230,7 +230,7 @@ func asmInstr(progSymbols, memSymbols map[string]int64, instr string, addrMode s
 		panic(fmt.Sprintf("unknown instruction: %s", instr))
 	}
 
-	return fmt.Sprintf("\t\tfunc(v *CGVM) { op_%s(v, %s) },\n", instr, resolveOperand(progSymbols, memSymbols, addrMode, operand))
+	return fmt.Sprintf("\t\tfunc(v *CGVM) error { return op_%s(v, %s) },\n", instr, resolveOperand(progSymbols, memSymbols, addrMode, operand))
 }
 
 func createConsts(progSymbols, memSymbols map[string]int64) string {
@@ -283,7 +283,7 @@ func asm(filename string, want map[int64]int64) (string, error) {
 	header += "package codegen\n\n"
 	cmd_name := reFilename.FindStringSubmatch(filepath.Base(filename))[1]
 	code := header
-	code += fmt.Sprintf("func init%s() ([]int64, []func(*CGVM)) {\n", cmd_name)
+	code += fmt.Sprintf("func init%s() ([]int64, []func(*CGVM) error) {\n", cmd_name)
 	code += createConsts(progSymbols, memSymbols)
 	code += pass2(srcLines, progSymbols, memSymbols)
 	code += "\treturn memory, program\n"

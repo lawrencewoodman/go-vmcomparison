@@ -2,7 +2,7 @@
 
 package codegen
 
-func initloopuntil_v1() ([]int64, []func(*CGVM)) {
+func initloopuntil_v1() ([]int64, []func(*CGVM) error) {
 	const (
 		p_done = 7
 		p_loop = 3
@@ -15,15 +15,15 @@ func initloopuntil_v1() ([]int64, []func(*CGVM)) {
 		m_ok = 1
 		m_sum = 0
 	)
-	program := []func(v *CGVM){
-		func(v *CGVM) { op_LDA(v, m_l5000) },
-		func(v *CGVM) { op_STA(v, m_cnt) },
-		func(v *CGVM) { op_LDA(v, m_l0) },
-		func(v *CGVM) { op_ADD(v, m_l1) },
-		func(v *CGVM) { op_DSZ(v, m_cnt) },
-		func(v *CGVM) { op_JMP(v, p_loop) },
-		func(v *CGVM) { op_STA(v, m_sum) },
-		func(v *CGVM) { op_HLT(v, m_ok) },
+	program := []func(v *CGVM) error {
+		func(v *CGVM) error { return op_LDA(v, m_l5000) },
+		func(v *CGVM) error { return op_STA(v, m_cnt) },
+		func(v *CGVM) error { return op_LDA(v, m_l0) },
+		func(v *CGVM) error { return op_ADD(v, m_l1) },
+		func(v *CGVM) error { return op_DSZ(v, m_cnt) },
+		func(v *CGVM) error { return op_JMP(v, p_loop) },
+		func(v *CGVM) error { return op_STA(v, m_sum) },
+		func(v *CGVM) error { return op_HLT(v, m_ok) },
 	}
 	memory := []int64{
 		0,

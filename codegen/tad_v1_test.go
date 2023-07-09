@@ -2,7 +2,7 @@
 
 package codegen
 
-func inittad_v1() ([]int64, []func(*CGVM)) {
+func inittad_v1() ([]int64, []func(*CGVM) error) {
 	const (
 		p_done = 4
 	)
@@ -14,12 +14,12 @@ func inittad_v1() ([]int64, []func(*CGVM)) {
 		m_opAddr = 1
 		m_val = 5
 	)
-	program := []func(v *CGVM){
-		func(v *CGVM) { op_LDA(v, calcBaseIndexAddr(v, m_memBase, m_opAddr)) },
-		func(v *CGVM) { op_ADD(v, m_lac) },
-		func(v *CGVM) { op_AND(v, m_mask13) },
-		func(v *CGVM) { op_STA(v, m_lac) },
-		func(v *CGVM) { op_HLT(v, m_ok) },
+	program := []func(v *CGVM) error {
+		func(v *CGVM) error { return op_LDA(v, calcBaseIndexAddr(v, m_memBase, m_opAddr)) },
+		func(v *CGVM) error { return op_ADD(v, m_lac) },
+		func(v *CGVM) error { return op_AND(v, m_mask13) },
+		func(v *CGVM) error { return op_STA(v, m_lac) },
+		func(v *CGVM) error { return op_HLT(v, m_ok) },
 	}
 	memory := []int64{
 		0,

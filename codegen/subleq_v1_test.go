@@ -2,7 +2,7 @@
 
 package codegen
 
-func initsubleq_v1() ([]int64, []func(*CGVM)) {
+func initsubleq_v1() ([]int64, []func(*CGVM) error) {
 	const (
 		p_exec = 9
 		p_fetch = 0
@@ -21,30 +21,30 @@ func initsubleq_v1() ([]int64, []func(*CGVM)) {
 		m_program = 8
 		m_sum = 22
 	)
-	program := []func(v *CGVM){
-		func(v *CGVM) { op_LDA(v, calcBaseIndexAddr(v, m_memBase, m_pc)) },
-		func(v *CGVM) { op_STA(v, m_opA) },
-		func(v *CGVM) { op_INC(v, m_pc) },
-		func(v *CGVM) { op_LDA(v, calcBaseIndexAddr(v, m_memBase, m_pc)) },
-		func(v *CGVM) { op_STA(v, m_opB) },
-		func(v *CGVM) { op_INC(v, m_pc) },
-		func(v *CGVM) { op_LDA(v, calcBaseIndexAddr(v, m_memBase, m_pc)) },
-		func(v *CGVM) { op_STA(v, m_opC) },
-		func(v *CGVM) { op_INC(v, m_pc) },
-		func(v *CGVM) { op_LDA(v, calcBaseIndexAddr(v, m_memBase, m_opB)) },
-		func(v *CGVM) { op_SUB(v, calcBaseIndexAddr(v, m_memBase, m_opA)) },
-		func(v *CGVM) { op_STA(v, calcBaseIndexAddr(v, m_memBase, m_opB)) },
-		func(v *CGVM) { op_LDA(v, m_l1000) },
-		func(v *CGVM) { op_SUB(v, m_opB) },
-		func(v *CGVM) { op_JEQ(v, p_halt) },
-		func(v *CGVM) { op_LDA(v, calcBaseIndexAddr(v, m_memBase, m_opB)) },
-		func(v *CGVM) { op_JGT(v, p_fetch) },
-		func(v *CGVM) { op_LDA(v, m_opC) },
-		func(v *CGVM) { op_STA(v, m_pc) },
-		func(v *CGVM) { op_JMP(v, p_fetch) },
-		func(v *CGVM) { op_LDA(v, calcBaseIndexAddr(v, m_memBase, m_opB)) },
-		func(v *CGVM) { op_STA(v, m_hltVal) },
-		func(v *CGVM) { op_HLT(v, m_ok) },
+	program := []func(v *CGVM) error {
+		func(v *CGVM) error { return op_LDA(v, calcBaseIndexAddr(v, m_memBase, m_pc)) },
+		func(v *CGVM) error { return op_STA(v, m_opA) },
+		func(v *CGVM) error { return op_INC(v, m_pc) },
+		func(v *CGVM) error { return op_LDA(v, calcBaseIndexAddr(v, m_memBase, m_pc)) },
+		func(v *CGVM) error { return op_STA(v, m_opB) },
+		func(v *CGVM) error { return op_INC(v, m_pc) },
+		func(v *CGVM) error { return op_LDA(v, calcBaseIndexAddr(v, m_memBase, m_pc)) },
+		func(v *CGVM) error { return op_STA(v, m_opC) },
+		func(v *CGVM) error { return op_INC(v, m_pc) },
+		func(v *CGVM) error { return op_LDA(v, calcBaseIndexAddr(v, m_memBase, m_opB)) },
+		func(v *CGVM) error { return op_SUB(v, calcBaseIndexAddr(v, m_memBase, m_opA)) },
+		func(v *CGVM) error { return op_STA(v, calcBaseIndexAddr(v, m_memBase, m_opB)) },
+		func(v *CGVM) error { return op_LDA(v, m_l1000) },
+		func(v *CGVM) error { return op_SUB(v, m_opB) },
+		func(v *CGVM) error { return op_JEQ(v, p_halt) },
+		func(v *CGVM) error { return op_LDA(v, calcBaseIndexAddr(v, m_memBase, m_opB)) },
+		func(v *CGVM) error { return op_JGT(v, p_fetch) },
+		func(v *CGVM) error { return op_LDA(v, m_opC) },
+		func(v *CGVM) error { return op_STA(v, m_pc) },
+		func(v *CGVM) error { return op_JMP(v, p_fetch) },
+		func(v *CGVM) error { return op_LDA(v, calcBaseIndexAddr(v, m_memBase, m_opB)) },
+		func(v *CGVM) error { return op_STA(v, m_hltVal) },
+		func(v *CGVM) error { return op_HLT(v, m_ok) },
 	}
 	memory := []int64{
 		1000,

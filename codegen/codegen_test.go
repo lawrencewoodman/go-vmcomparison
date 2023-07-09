@@ -6,13 +6,13 @@ import (
 
 type Test struct {
 	name string
-	init func() ([]int64, []func(*CGVM))
+	init func() ([]int64, []func(*CGVM) error)
 	want map[int64]int64 // [memloc]value
 }
 
 var tests = []Test{}
 
-func addTest(name string, init func() ([]int64, []func(*CGVM)), want map[int64]int64) {
+func addTest(name string, init func() ([]int64, []func(*CGVM) error), want map[int64]int64) {
 	tests = append(tests, Test{name, init, want})
 }
 
@@ -22,7 +22,10 @@ func TestRun(t *testing.T) {
 			mem, program := test.init()
 			v := New()
 			v.LoadMem(mem)
-			v.Run(program)
+			err := v.Run(program)
+			if err != nil {
+				t.Fatal(err)
+			}
 			for memLoc, wantValue := range test.want {
 				if v.mem[memLoc] != wantValue {
 					t.Errorf("mem[%d] got: %d, want: %d", memLoc, v.mem[memLoc], wantValue)
@@ -42,8 +45,11 @@ func BenchmarkRun(t *testing.B) {
 				v.LoadMem(mem)
 
 				t.StartTimer()
-				v.Run(program)
+				err := v.Run(program)
 				t.StopTimer()
+				if err != nil {
+					t.Fatal(err)
+				}
 
 				for memLoc, wantValue := range test.want {
 					if v.mem[memLoc] != wantValue {
