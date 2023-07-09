@@ -158,10 +158,10 @@ func (v *SUBLEQ) execute(operandA int64, operandB int64, operandC int64) bool {
 	//fmt.Printf("                      %d - %d = ", v.mem[operandB], v.mem[operandA])
 
 	if operandB == hltLoc {
-		v.hltVal = -v.mem[operandB]
+		v.hltVal = -v.mem[operandA]
 		return true
 	} else {
-		v.mem[operandB] = v.mem[operandB] - v.mem[operandA]
+		v.mem[operandB] -= v.mem[operandA]
 	}
 	//fmt.Printf("%d\n", v.mem[operandB])
 
