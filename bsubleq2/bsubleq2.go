@@ -19,6 +19,8 @@ import (
 // TODO: Make this configurable
 const memSize = 32000
 
+var memSizeB = big.NewInt(memSize)
+
 // Location in memory of hltVal
 // If this is used as a destination location then a HLT is executed
 const hltLoc = 1000
@@ -42,21 +44,89 @@ func New() *SUBLEQ {
 	return &SUBLEQ{mem: mem}
 }
 
-func (v *SUBLEQ) Step() (bool, error) {
-	operandA, operandB, operandC, err := v.fetch()
-	if err != nil {
-		return false, err
-	}
-	return v.execute(operandA, operandB, operandC)
-}
-
 func (v *SUBLEQ) Run() error {
-	var err error
 	hlt := false
 	for !hlt {
-		hlt, err = v.Step()
-		if err != nil {
-			return err
+		if v.pc+2 >= v.codeSize {
+			return fmt.Errorf("PC: %d, outside code range", v.pc)
+		}
+
+		operandA := v.code[v.pc]
+		operandB := v.code[v.pc+1]
+		operandC := v.code[v.pc+2]
+
+		if operandA < 0 {
+			ioperand := v.mem[-operandA]
+			if ioperand.Sign() == -1 {
+				return fmt.Errorf("PC: %d, double indirect not supported", v.pc)
+			}
+			if ioperand.Cmp(memSizeB) >= 0 {
+				return fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandA)
+			}
+			operandA = ioperand.Int64()
+			/*
+				if !ioperand.IsInt64() {
+					return fmt.Errorf("PC: %d, outside memory range", v.pc)
+				}
+				operandA = ioperand.Int64()
+				if operandA < 0 {
+					return fmt.Errorf("PC: %d, double indirect not supported", v.pc)
+				}
+				if operandA >= memSize {
+					return fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandA)
+				}
+			*/
+		}
+
+		if operandB < 0 {
+			ioperand := v.mem[-operandB]
+			if ioperand.Sign() == -1 {
+				return fmt.Errorf("PC: %d, double indirect not supported", v.pc)
+			}
+			if ioperand.Cmp(memSizeB) >= 0 {
+				return fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandA)
+			}
+			operandB = ioperand.Int64()
+
+			/*
+				if !ioperand.IsInt64() {
+					return fmt.Errorf("PC: %d, outside memory range", v.pc)
+				}
+				operandB = ioperand.Int64()
+				if operandB < 0 {
+					return fmt.Errorf("PC: %d, double indirect not supported", v.pc)
+				}
+				if operandB >= memSize {
+					return fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandB)
+				}
+			*/
+		}
+
+		if operandC < 0 {
+			ioperand := v.mem[-operandC]
+			if !ioperand.IsInt64() {
+				return fmt.Errorf("PC: %d, outside memory range", v.pc)
+			}
+			operandC = ioperand.Int64()
+			if operandC < 0 {
+				return fmt.Errorf("PC: %d, double indirect not supported", v.pc)
+			}
+		}
+
+		//fmt.Printf("PC: %7s    SUBLEQ %s, %s, %s\n", v.addr2symbol(v.pc, true), v.addr2symbol(operandA), v.addr2symbol(operandB), v.addr2symbol(operandC))
+		//fmt.Printf("                      %d - %d = ", v.mem[operandB], v.mem[operandA])
+		if operandB == hltLoc {
+			v.hltVal = big.NewInt(0).Neg(v.mem[operandA])
+			hlt = true
+			break
+		} else {
+			v.mem[operandB].Sub(v.mem[operandB], v.mem[operandA])
+		}
+
+		if v.mem[operandB].Sign() <= 0 {
+			v.pc = operandC
+		} else {
+			v.pc += 3
 		}
 	}
 	return nil
@@ -71,85 +141,6 @@ func (v *SUBLEQ) LoadRoutine(code []int64, data []*big.Int, codeSymbols map[stri
 	v.codeSize = int64(len(v.code))
 	v.codeSymbols = codeSymbols
 	v.dataSymbols = dataSymbols
-}
-
-// getOperandAB returns the operand as supplied unless it is negative in which
-// case it returns the value at the location in memory pointed to by the
-// operand.  This is for A or B operands and hence always checks memSize.
-func (v *SUBLEQ) getOperandAB(operand int64) (int64, error) {
-	if operand < 0 {
-		operand = -operand
-		if operand >= memSize {
-			return 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operand)
-		}
-		ioperand := v.mem[operand]
-		if !ioperand.IsInt64() {
-			return 0, fmt.Errorf("PC: %d, outside memory range", v.pc)
-		}
-		operand = ioperand.Int64()
-		if operand < 0 {
-			return 0, fmt.Errorf("PC: %d, double indirect not supported", v.pc)
-		}
-		if operand >= memSize {
-			return 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operand)
-		}
-	}
-
-	return operand, nil
-}
-
-// getOperandC returns the operand as supplied unless it is negative in which
-// case it returns the value at the location in memory pointed to by the
-// operand.  This is for C operands and hence only checks memSize if indirect,
-// otherwise it assumes that the assembler didn't allow a C operand outside
-// the code size.
-func (v *SUBLEQ) getOperandC(operand int64) (int64, error) {
-	if operand < 0 {
-		operand = -operand
-		if operand >= memSize {
-			return 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operand)
-		}
-		ioperand := v.mem[operand]
-		if !ioperand.IsInt64() {
-			return 0, fmt.Errorf("PC: %d, outside memory range", v.pc)
-		}
-		operand = ioperand.Int64()
-		if operand < 0 {
-			return 0, fmt.Errorf("PC: %d, double indirect not supported", v.pc)
-		}
-	}
-
-	return operand, nil
-}
-
-// fetch gets the next instruction from memory
-// Returns: A, B, C, error
-func (v *SUBLEQ) fetch() (int64, int64, int64, error) {
-	var a, b, c int64
-	var err error
-
-	if v.pc+2 >= v.codeSize {
-		return 0, 0, 0, fmt.Errorf("PC: %d, outside code range: %d", v.pc, v.pc)
-	}
-
-	operandA := v.code[v.pc]
-	operandB := v.code[v.pc+1]
-	operandC := v.code[v.pc+2]
-
-	a, err = v.getOperandAB(operandA)
-	if err != nil {
-		return 0, 0, 0, err
-	}
-	b, err = v.getOperandAB(operandB)
-	if err != nil {
-		return 0, 0, 0, err
-	}
-	c, err = v.getOperandC(operandC)
-	if err != nil {
-		return 0, 0, 0, err
-	}
-
-	return a, b, c, nil
 }
 
 func (v *SUBLEQ) addr2symbol(addr int64, onlyCode ...bool) string {
@@ -167,24 +158,4 @@ func (v *SUBLEQ) addr2symbol(addr int64, onlyCode ...bool) string {
 		}
 	}
 	return fmt.Sprintf("%d", addr)
-}
-
-// execute executes the supplied instruction
-// Returns: hlt, error
-func (v *SUBLEQ) execute(operandA int64, operandB int64, operandC int64) (bool, error) {
-	//fmt.Printf("PC: %7s    SUBLEQ %s, %s, %s\n", v.addr2symbol(v.pc, true), v.addr2symbol(operandA), v.addr2symbol(operandB), v.addr2symbol(operandC))
-	//fmt.Printf("                      %d - %d = ", v.mem[operandB], v.mem[operandA])
-	if operandB == hltLoc {
-		v.hltVal = big.NewInt(0).Sub(v.mem[operandB], v.mem[operandA])
-		return true, nil
-	} else {
-		v.mem[operandB].Sub(v.mem[operandB], v.mem[operandA])
-	}
-
-	if v.mem[operandB].Sign() <= 0 {
-		v.pc = operandC
-	} else {
-		v.pc += 3
-	}
-	return false, nil
 }
