@@ -37,21 +37,58 @@ func New() *SUBLEQ {
 	return &SUBLEQ{}
 }
 
-func (v *SUBLEQ) Step() (bool, error) {
-	operandA, operandB, operandC, err := v.fetch()
-	if err != nil {
-		return false, err
-	}
-	return v.execute(operandA, operandB, operandC), nil
-}
-
 func (v *SUBLEQ) Run() error {
-	var err error
 	hlt := false
 	for !hlt {
-		hlt, err = v.Step()
-		if err != nil {
-			return err
+		if v.pc+2 >= v.codeSize {
+			return fmt.Errorf("PC: %d, outside code range", v.pc)
+		}
+		operandA := v.code[v.pc]
+		operandB := v.code[v.pc+1]
+		operandC := v.code[v.pc+2]
+
+		if operandA < 0 {
+			operandA = v.mem[-operandA]
+			if operandA < 0 {
+				return fmt.Errorf("PC: %d, double indirect not supported", v.pc)
+			}
+			if operandA >= memSize {
+				return fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandA)
+			}
+		}
+
+		if operandB < 0 {
+			operandB = v.mem[-operandB]
+			if operandB < 0 {
+				return fmt.Errorf("PC: %d, double indirect not supported", v.pc)
+			}
+			if operandB >= memSize {
+				return fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operandB)
+			}
+		}
+		if operandC < 0 {
+			operandC = v.mem[-operandC]
+			if operandC < 0 {
+				return fmt.Errorf("PC: %d, double indirect not supported", v.pc)
+			}
+		}
+
+		//fmt.Printf("PC: %7s    SUBLEQ %s, %s, %s\n", v.addr2symbol(v.pc, true), v.addr2symbol(operandA), v.addr2symbol(operandB), v.addr2symbol(operandC, true))
+		//fmt.Printf("                      %d - %d = ", v.mem[operandB], v.mem[operandA])
+
+		if operandB == hltLoc {
+			v.hltVal = -v.mem[operandA]
+			hlt = true
+			break
+		} else {
+			v.mem[operandB] -= v.mem[operandA]
+		}
+		//fmt.Printf("%d\n", v.mem[operandB])
+
+		if v.mem[operandB] <= 0 {
+			v.pc = operandC
+		} else {
+			v.pc += 3
 		}
 	}
 	return nil
@@ -63,75 +100,6 @@ func (v *SUBLEQ) LoadRoutine(code []int64, data []int64, codeSymbols map[string]
 	v.codeSize = int64(len(v.code))
 	v.codeSymbols = codeSymbols
 	v.dataSymbols = dataSymbols
-}
-
-// getOperandAB returns the operand as supplied unless it is negative in which
-// case it returns the value at the location in memory pointed to by the
-// operand.  This is for A or B operands and hence always checks memSize.
-func (v *SUBLEQ) getOperandAB(operand int64) (int64, error) {
-	if operand < 0 {
-		operand = 0 - operand
-		if operand >= memSize {
-			return 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operand)
-		}
-		operand = v.mem[operand]
-		if operand < 0 {
-			return 0, fmt.Errorf("PC: %d, double indirect not supported", v.pc)
-		}
-		if operand >= memSize {
-			return 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operand)
-		}
-	}
-
-	return operand, nil
-}
-
-// getOperandC returns the operand as supplied unless it is negative in which
-// case it returns the value at the location in memory pointed to by the
-// operand.  This is for C operands and hence only checks memSize if indirect,
-// otherwise it assumes that the assembler didn't allow a C operand outside
-// the code size.
-func (v *SUBLEQ) getOperandC(operand int64) (int64, error) {
-	if operand < 0 {
-		operand = -operand
-		if operand >= memSize {
-			return 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, operand)
-		}
-		operand = v.mem[operand]
-		if operand < 0 {
-			return 0, fmt.Errorf("PC: %d, double indirect not supported", v.pc)
-		}
-	}
-
-	return operand, nil
-}
-
-// fetch gets the next instruction from memory
-// Returns: A, B, C, error
-func (v *SUBLEQ) fetch() (int64, int64, int64, error) {
-	var err error
-
-	if v.pc+2 >= memSize {
-		return 0, 0, 0, fmt.Errorf("PC: %d, outside memory range: %d", v.pc, v.pc)
-	}
-	operandA := v.code[v.pc]
-	operandB := v.code[v.pc+1]
-	operandC := v.code[v.pc+2]
-
-	operandA, err = v.getOperandAB(operandA)
-	if err != nil {
-		return 0, 0, 0, err
-	}
-	operandB, err = v.getOperandAB(operandB)
-	if err != nil {
-		return 0, 0, 0, err
-	}
-	operandC, err = v.getOperandC(operandC)
-	if err != nil {
-		return 0, 0, 0, err
-	}
-
-	return operandA, operandB, operandC, nil
 }
 
 func (v *SUBLEQ) addr2symbol(addr int64, onlyCode ...bool) string {
@@ -149,26 +117,4 @@ func (v *SUBLEQ) addr2symbol(addr int64, onlyCode ...bool) string {
 		}
 	}
 	return fmt.Sprintf("%d", addr)
-}
-
-// execute executes the supplied instruction
-// Returns: hlt, error
-func (v *SUBLEQ) execute(operandA int64, operandB int64, operandC int64) bool {
-	//fmt.Printf("PC: %7s    SUBLEQ %s, %s, %s\n", v.addr2symbol(v.pc, true), v.addr2symbol(operandA), v.addr2symbol(operandB), v.addr2symbol(operandC, true))
-	//fmt.Printf("                      %d - %d = ", v.mem[operandB], v.mem[operandA])
-
-	if operandB == hltLoc {
-		v.hltVal = -v.mem[operandA]
-		return true
-	} else {
-		v.mem[operandB] -= v.mem[operandA]
-	}
-	//fmt.Printf("%d\n", v.mem[operandB])
-
-	if v.mem[operandB] <= 0 {
-		v.pc = operandC
-	} else {
-		v.pc = v.pc + 3
-	}
-	return false
 }
