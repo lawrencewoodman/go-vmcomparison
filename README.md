@@ -17,13 +17,13 @@ directory.
 
 All the benchmarks can be be run without running the tests using:
 
-  $ go test ./... -bench . -run xxx -timeout 0
+    $ go test ./... -bench . -run xxx -timeout 0
 
 If the output of the above is redirected to a file, then they can be collected
 and turned into a table using `cmd/collect-benchmarks` as follows:
 
-  $ go test ./... -bench . -run xxx -timeout 0 > raw_results.txt
-  $ go run cmd/collect-benchmarks/main.go tables raw_results.txt
+    $ go test ./... -bench . -run xxx -timeout 0 > raw_results.txt
+    $ go run cmd/collect-benchmarks/main.go tables raw_results.txt
 
 
 
