@@ -56,7 +56,7 @@ func readFile(filename string) ([]string, error) {
 
 // Regular expressions for parts of a line
 var rePkg = regexp.MustCompile(`^pkg: .*?\/go-vmcomparison\/(.*)$`)
-var reBenchmark = regexp.MustCompile(`^Benchmark.*?\/(.*?)-[^ ]+\s+\d+\s+(\d+) ns\/op$`)
+var reBenchmark = regexp.MustCompile(`^Benchmark.*?\/(.*?)-[^ ]+\s+\d+\s+(\d+)\.?\d* ns\/op$`)
 var reSize = regexp.MustCompile(`^Routine: ([^ ]+) size: (\d+)$`)
 var reNameStub = regexp.MustCompile(`^([^_]*).*$`)
 
@@ -67,7 +67,7 @@ func parse(lines []string) []stat {
 	var err error
 
 	for _, line := range lines {
-		//		fmt.Printf("line: %s\n", line)
+		// fmt.Printf("line: %s\n", line)
 		// If there is a pkg: line
 		if rePkg.MatchString(line) {
 			pkg = rePkg.FindStringSubmatch(line)[1]
